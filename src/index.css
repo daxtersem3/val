@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #FACC15;
+  --color-primary-dark: #EAB308;
+  --color-bg: #09090B;
+  --color-surface: #18181B;
+  --color-surface-hover: #27272A;
+  --color-border: #3F3F46;
+  --color-text: #FFFFFF;
+  --color-text-muted: #A1A1AA;
+}
+
+body {
+  font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #09090B;
+  color: #FFFFFF;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #09090B;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FACC15;
+}
+
+/* Soft Matte Shadows (Replaced harsh neon) */
+.yellow-glow {
+  box-shadow: 0 4px 20px -2px rgba(250, 204, 21, 0.2);
+}
+
+.yellow-glow-lg {
+  box-shadow: 0 8px 30px -4px rgba(250, 204, 21, 0.25);
+}
+
+.yellow-text-glow {
+  text-shadow: 0 2px 10px rgba(250, 204, 21, 0.3);
+}
+
+/* Subtle Brush Outer Ring for Cart Button */
+.brush-ring {
+  position: relative;
+}
+.brush-ring::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px dashed #FACC15;
+  animation: rotateBrush 16s linear infinite;
+  opacity: 0.8;
+}
+.brush-ring::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+}
+
+@keyframes rotateBrush {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* =====================================================
+   MOBILE BOTTOM NAV — THICKER BAR, FULLY VISIBLE ICONS
+   ===================================================== */
+.mobile-nav-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  pointer-events: none;
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+
+.mobile-nav-wrapper {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  padding-top: 28px;
+  padding-bottom: 20px;
+}
+
+/* Background Layer with angled center notch */
+.mobile-nav-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #18181B 0%, #0a0a0a 100%);
+  border-top: 1px solid #27272A;
+  clip-path: polygon(0 26px, 34% 22px, 44% 4px, 50% 0, 56% 4px, 66% 22px, 100% 26px, 100% 100%, 0 100%);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.9);
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .mobile-nav-container {
+    display: none;
+  }
+}
+
+/* Hide scrollbar on category filter */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
