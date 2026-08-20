@@ -99,7 +99,7 @@ body {
   inset: 0;
   background: linear-gradient(180deg, #18181B 0%, #0a0a0a 100%);
   border-top: 1px solid #27272A;
-  clip-path: polygon(0 26px, 34% 22px, 44% 4px, 50% 0, 56% 4px, 66% 22px, 100% 26px, 100% 100%, 0 100%);
+  clip-path: polygon(0 26px, 32% 22px, 42% 4px, 50% 0, 58% 4px, 68% 22px, 100% 26px, 100% 100%, 0 100%);
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.9);
   z-index: 0;
 }

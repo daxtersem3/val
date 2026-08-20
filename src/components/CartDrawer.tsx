@@ -130,7 +130,7 @@ Aguardando confirmação e chave PIX para envio!`;
                   className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex gap-4 items-center justify-between"
                 >
                   <img
-                    src={item.product.image}
+                    src={item.product.images?.[0]}
                     alt={item.product.name}
                     className="w-16 h-16 rounded-xl object-cover border border-zinc-700/60"
                   />
