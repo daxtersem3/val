@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product } from '../types';
 
-const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const DEFAULT_SUPABASE_URL = 'https://kyyhkutyazkqcrbnqzba.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_DBqkeyIdUvwUOOuVtVePdQ_Qndhw9cX';
+
+const rawUrl = (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim();
 const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY).trim();
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 

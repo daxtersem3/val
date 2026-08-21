@@ -7,6 +7,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+ARG VITE_SUPABASE_URL=https://kyyhkutyazkqcrbnqzba.supabase.co
+ARG VITE_SUPABASE_ANON_KEY=sb_publishable_DBqkeyIdUvwUOOuVtVePdQ_Qndhw9cX
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 COPY . .
 RUN npm run build
 
