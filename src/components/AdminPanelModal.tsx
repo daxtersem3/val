@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Product, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Edit, Trash2, Save, Upload, CheckCircle, ShieldCheck, Lock, Database, ImagePlus } from 'lucide-react';
-import { uploadProductImage, isSupabaseConfigured } from '../lib/supabase';
+import { 
+  X, Plus, Edit, Trash2, Save, Upload, CheckCircle, ShieldCheck, 
+  Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles
+} from 'lucide-react';
+import { uploadProductImage, isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -29,21 +32,70 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // Security Auth Gate (PIN protection)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [pinInput, setPinInput] = useState<string>('');
-  const [authError, setAuthError] = useState<boolean>(false);
+  // Supabase Auth States
+  const [session, setSession] = useState<any>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState('');
 
-  const DEFAULT_PIN = '1234'; // Default Secret Admin PIN
+  // Check Supabase session on open & listen to changes
+  useEffect(() => {
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+      });
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === DEFAULT_PIN || pinInput === 'lp2026') {
-      setIsAuthenticated(true);
-      setAuthError(false);
-    } else {
-      setAuthError(true);
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+        setSession(currentSession);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
+  }, []);
+
+  const handleSupabaseLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthErrorMessage('');
+
+    if (!supabase) {
+      setAuthErrorMessage('Supabase ainda não foi configurado no arquivo .env.');
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailInput.trim(),
+        password: passwordInput,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setAuthErrorMessage('Email ou senha incorretos. Verifique os dados em Supabase.');
+        } else {
+          setAuthErrorMessage(error.message);
+        }
+      } else if (data?.session) {
+        setSession(data.session);
+        setEmailInput('');
+        setPasswordInput('');
+      }
+    } catch (err: any) {
+      setAuthErrorMessage(err?.message || 'Erro ao conectar. Tente novamente.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setSession(null);
   };
 
   const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
@@ -87,7 +139,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
 
-  // File Upload Handler — adds to images array
+  // File Upload Handler — adds to images array with auto-compression
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -98,7 +150,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       const uploadedUrls = await Promise.all(uploadPromises);
       setFormData((prev) => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
     } catch (err) {
-      alert('Erro ao carregar a imagem. Tente novamente.');
+      alert('Erro ao carregar imagem. Verifique se o bucket "product-images" está público.');
     } finally {
       setUploadingImage(false);
       e.target.value = '';
@@ -125,7 +177,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.price || formData.images.length === 0) {
-      alert('Por favor, preencha o Nome, Preço e ao menos 1 Foto do produto.');
+      alert('Por favor, preencha o Nome, Preço e adicione ao menos 1 Foto do produto.');
       return;
     }
 
@@ -202,69 +254,129 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+          className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/80">
+          <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/90">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-black font-black">
+              <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-black font-black shadow-[0_0_15px_rgba(250,204,21,0.4)]">
                 <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
                   PAINEL DE ADMINISTRAÇÃO
                 </h2>
                 <p className="text-xs text-yellow-400 font-semibold flex items-center gap-1.5">
                   <Database className="w-3.5 h-3.5" />
-                  {isSupabaseConfigured ? '🟢 Conectado ao Supabase (Nuvem)' : '🟡 Banco Local (Base64/Storage)'}
+                  {isSupabaseConfigured ? '🟢 Conectado ao Supabase (Nuvem)' : '🟡 Modo Local'}
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-2 bg-zinc-800 hover:bg-yellow-400 text-zinc-300 hover:text-black rounded-full transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {session && (
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 bg-zinc-800/80 hover:bg-red-500/20 text-zinc-300 hover:text-red-400 border border-zinc-700/50 hover:border-red-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                  title="Cerrar sesión de Administrador"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Sair</span>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 bg-zinc-800 hover:bg-yellow-400 text-zinc-300 hover:text-black rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* If NOT Authenticated: PIN Login Screen */}
-          {!isAuthenticated ? (
+          {/* ========================================================= */}
+          {/* IF NOT AUTHENTICATED: SUPABASE SECURE LOGIN SCREEN         */}
+          {/* ========================================================= */}
+          {!session ? (
             <div className="p-8 sm:p-12 text-center max-w-md mx-auto my-auto w-full">
-              <div className="w-16 h-16 rounded-full bg-zinc-900 border border-yellow-400/40 text-yellow-400 flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-yellow-500 via-amber-400 to-yellow-300 text-black flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(250,204,21,0.3)]">
+                <Lock className="w-8 h-8 stroke-[2.5]" />
               </div>
-              <h3 className="text-xl font-black text-white uppercase">Acesso Restrito</h3>
-              <p className="text-xs text-zinc-400 mt-1 mb-6">
-                Digite a senha para acessar o painel de produtos. (PIN: <code className="text-yellow-400 font-bold">1234</code>)
+              <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+                Acesso do Administrador
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1.5 mb-6">
+                Inicie sessão com sua conta de administrador do Supabase para gerenciar produtos.
               </p>
 
-              <form onSubmit={handleAuthSubmit} className="space-y-4">
-                <input
-                  type="password"
-                  required
-                  placeholder="Digite o PIN de Acesso"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-center text-lg tracking-widest text-white focus:border-yellow-400 focus:outline-none"
-                />
+              <form onSubmit={handleSupabaseLogin} className="space-y-4 text-left">
+                <div>
+                  <label className="text-[11px] font-black text-zinc-300 uppercase tracking-wider block mb-1.5">
+                    Email de Administrador
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@lpimportados.com"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:border-yellow-400 focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
 
-                {authError && (
-                  <p className="text-xs text-red-500 font-bold">PIN incorreto. Tente novamente.</p>
+                <div>
+                  <label className="text-[11px] font-black text-zinc-300 uppercase tracking-wider block mb-1.5">
+                    Senha Secreta
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••••••"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-700/80 rounded-xl pl-10 pr-11 py-3 text-sm text-white focus:border-yellow-400 focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {authErrorMessage && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-400 font-bold">
+                    {authErrorMessage}
+                  </div>
                 )}
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg"
+                  disabled={authLoading}
+                  className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-sm uppercase tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(250,204,21,0.3)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
                 >
-                  DESBLOQUEAR PAINEL
+                  {authLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>AUTENTICANDO...</span>
+                    </>
+                  ) : (
+                    <span>ENTRAR NO PAINEL</span>
+                  )}
                 </button>
               </form>
             </div>
           ) : (
-            /* Authenticated Admin Dashboard */
+            /* ========================================================= */
+            /* AUTHENTICATED ADMIN DASHBOARD                              */
+            /* ========================================================= */
             <>
               {/* Navigation Tabs */}
               <div className="flex border-b border-zinc-800 bg-zinc-900/40">
@@ -274,7 +386,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     resetForm();
                     setActiveTab('add');
                   }}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
+                  className={`flex-1 py-3.5 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
                     activeTab === 'add'
                       ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10'
                       : 'border-transparent text-zinc-400 hover:text-white'
@@ -286,7 +398,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                 <button
                   onClick={() => setActiveTab('list')}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
+                  className={`flex-1 py-3.5 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all ${
                     activeTab === 'list'
                       ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10'
                       : 'border-transparent text-zinc-400 hover:text-white'
@@ -298,7 +410,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               </div>
 
               {/* Content Body */}
-              <div className="p-6 overflow-y-auto flex-1">
+              <div className="p-5 sm:p-6 overflow-y-auto flex-1">
                 {activeTab === 'add' ? (
                   /* Add/Edit Form */
                   <form onSubmit={handleSubmit} className="space-y-5">
@@ -377,20 +489,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     </div>
 
-                    {/* ============================== */}
-                    {/* MULTI-IMAGE UPLOAD SECTION     */}
-                    {/* ============================== */}
-                    <div>
-                      <label className="text-xs font-black text-zinc-300 uppercase tracking-wider block mb-2">
-                        <ImagePlus className="w-4 h-4 inline mr-1 text-yellow-400" />
-                        Fotos do Produto ({formData.images.length} adicionada{formData.images.length !== 1 ? 's' : ''}) *
-                      </label>
+                    {/* ============================================== */}
+                    {/* MULTI-IMAGE UPLOAD WITH AUTO-COMPRESSION VIEW  */}
+                    {/* ============================================== */}
+                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-black text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
+                          <ImagePlus className="w-4 h-4 text-yellow-400" />
+                          Fotos do Produto ({formData.images.length} adicionada{formData.images.length !== 1 ? 's' : ''}) *
+                        </label>
+                        <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <Sparkles className="w-3 h-3" />
+                          Otimização WebP Ativa
+                        </span>
+                      </div>
 
                       {/* Image Previews Grid */}
                       {formData.images.length > 0 && (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
                           {formData.images.map((imgUrl, idx) => (
-                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700 aspect-square bg-zinc-950">
+                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700/80 aspect-square bg-zinc-950 shadow-md">
                               <img
                                 src={imgUrl}
                                 alt={`Foto ${idx + 1}`}
@@ -399,12 +517,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(idx)}
-                                className="absolute top-1 right-1 w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                                 title="Remover foto"
                               >
                                 ✕
                               </button>
-                              <span className="absolute bottom-1 left-1 bg-black/70 text-[9px] text-white font-bold px-1.5 py-0.5 rounded">
+                              <span className={`absolute bottom-1.5 left-1.5 text-[9px] font-black px-2 py-0.5 rounded-md shadow ${
+                                idx === 0 ? 'bg-yellow-400 text-black' : 'bg-black/80 text-white'
+                              }`}>
                                 {idx === 0 ? 'CAPA' : `#${idx + 1}`}
                               </span>
                             </div>
@@ -412,12 +532,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </div>
                       )}
 
-                      {/* Add by URL */}
+                      {/* Upload and URL input Area */}
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2">
                         <div className="sm:col-span-8">
                           <input
                             type="text"
-                            placeholder="Cole a URL de uma imagem aqui..."
+                            placeholder="Ou cole a URL de uma imagem da internet..."
                             value={imageUrlInput}
                             onChange={(e) => setImageUrlInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -426,7 +546,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 handleAddImageUrl();
                               }
                             }}
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-yellow-400 focus:outline-none"
+                            className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-sm text-white focus:border-yellow-400 focus:outline-none"
                           />
                         </div>
                         <div className="sm:col-span-4 flex gap-2">
@@ -438,13 +558,25 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             <Plus className="w-3.5 h-3.5 text-yellow-400" />
                             URL
                           </button>
-                          <label className="flex-1 py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer transition-all">
-                            <Upload className="w-3.5 h-3.5 text-yellow-400" />
-                            {uploadingImage ? '...' : 'Arquivo'}
+                          <label className={`flex-1 py-2.5 px-3 bg-yellow-400 hover:bg-yellow-300 text-black rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md ${
+                            uploadingImage ? 'opacity-50 pointer-events-none' : ''
+                          }`}>
+                            {uploadingImage ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Subindo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Subir Foto</span>
+                              </>
+                            )}
                             <input
                               type="file"
                               accept="image/*"
                               multiple
+                              disabled={uploadingImage}
                               onChange={handleFileUpload}
                               className="hidden"
                             />
@@ -452,8 +584,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </div>
                       </div>
 
-                      <p className="text-[10px] text-zinc-500">
-                        A primeira foto será a capa do produto. Adicione várias fotos para criar uma galeria com swipe.
+                      <p className="text-[10px] text-zinc-400">
+                        💡 A primeira foto será a capa principal. Pode selecionar várias fotos ao mesmo tempo.
                       </p>
                     </div>
 
@@ -517,7 +649,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     <button
                       type="submit"
                       disabled={uploadingImage}
-                      className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl ${
+                      className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl cursor-pointer ${
                         savedSuccess
                           ? 'bg-emerald-500 text-black'
                           : 'bg-yellow-400 hover:bg-yellow-300 text-black shadow-[0_0_20px_rgba(250,204,21,0.4)]'
@@ -539,57 +671,67 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 ) : (
                   /* Product Management List */
                   <div className="space-y-3">
-                    {products.map((prod) => (
-                      <div
-                        key={prod.id}
-                        className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-between gap-4"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'} alt={prod.name} className="w-14 h-14 rounded-xl object-cover shrink-0" />
-                          {/* Small thumbnails for extra images */}
-                          {prod.images && prod.images.length > 1 && (
-                            <div className="flex gap-1 shrink-0">
-                              {prod.images.slice(1, 3).map((img, idx) => (
-                                <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-cover border border-zinc-700 opacity-60" />
-                              ))}
-                              {prod.images.length > 3 && (
-                                <span className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400">
-                                  +{prod.images.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-extrabold text-white truncate">{prod.name}</h4>
-                          <p className="text-xs text-yellow-400 font-black">
-                            R$ {prod.price.toFixed(2).replace('.', ',')} • {prod.category} • {prod.images?.length || 0} fotos
-                          </p>
-                        </div>
-
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            onClick={() => startEdit(prod)}
-                            className="p-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300"
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Excluir ${prod.name}?`)) {
-                                onDeleteProduct(prod.id);
-                              }
-                            }}
-                            className="p-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-500"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                    {products.length === 0 ? (
+                      <div className="text-center py-12 text-zinc-500 text-sm">
+                        Nenhum produto cadastrado ainda. Clique em <strong>+ Novo Produto</strong> para começar.
                       </div>
-                    ))}
+                    ) : (
+                      products.map((prod) => (
+                        <div
+                          key={prod.id}
+                          className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <img 
+                              src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'} 
+                              alt={prod.name} 
+                              className="w-14 h-14 rounded-xl object-cover shrink-0 border border-zinc-800" 
+                            />
+                            {/* Small thumbnails for extra images */}
+                            {prod.images && prod.images.length > 1 && (
+                              <div className="flex gap-1 shrink-0">
+                                {prod.images.slice(1, 3).map((img, idx) => (
+                                  <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-cover border border-zinc-700 opacity-60" />
+                                ))}
+                                {prod.images.length > 3 && (
+                                  <span className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400">
+                                    +{prod.images.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-extrabold text-white truncate">{prod.name}</h4>
+                            <p className="text-xs text-yellow-400 font-black">
+                              R$ {prod.price.toFixed(2).replace('.', ',')} • {prod.category} • {prod.images?.length || 0} fotos
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={() => startEdit(prod)}
+                              className="p-2.5 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-all shadow"
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Excluir ${prod.name}?`)) {
+                                  onDeleteProduct(prod.id);
+                                }
+                              }}
+                              className="p-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-500 transition-all shadow"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
