@@ -20,7 +20,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onClearCart
 }) => {
-  const WHATSAPP_NUMBER = '5547999999999';
+  const WHATSAPP_NUMBER = '554788498542';
 
   const [customer, setCustomer] = useState<CustomerOrderDetails>({
     name: '',

@@ -14,7 +14,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onExploreProducts,
   onSelectProduct
 }) => {
-  const WHATSAPP_NUMBER = '5547999999999';
+  const WHATSAPP_NUMBER = '554788498542';
 
   // Fallback defaults if no featured products
   const displayItems = featuredProducts.length > 0 ? featuredProducts : [
@@ -265,7 +265,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   />
                   <div>
                     <p className="text-[11px] font-bold text-white">LP IMPORTADOS SC</p>
-                    <p className="text-[9px] text-zinc-400">@lpimportadosss_</p>
+                    <p className="text-[9px] text-zinc-400">@lpimportadossss</p>
                   </div>
                 </div>
                 <button

@@ -20,7 +20,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
   activeSection,
   setActiveSection
 }) => {
-  const WHATSAPP_NUMBER = '5547999999999';
+  const WHATSAPP_NUMBER = '554788498542';
 
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 shadow-2xl hidden md:block">

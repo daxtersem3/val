@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin, Phone, MessageCircle, Clock, ShieldCheck, Heart, Sparkles, AtSign } from 'lucide-react';
 
 export const FooterContact: React.FC = () => {
-  const WHATSAPP_NUMBER = '5547999999999';
+  const WHATSAPP_NUMBER = '554788498542';
 
   return (
     <footer id="contato-section" className="bg-zinc-950 border-t border-zinc-800 text-white pt-16 pb-24 md:pb-16 relative overflow-hidden">
@@ -33,11 +33,11 @@ export const FooterContact: React.FC = () => {
 
           <div className="flex items-center gap-3 pt-2">
             <a
-              href="https://instagram.com/lpimportadosss_"
+              href="https://www.instagram.com/lpimportadossss?igsi=MXZvaGY1NXJlcnNmeA=="
               target="_blank"
               rel="noopener noreferrer"
               className="p-2.5 bg-zinc-900 hover:bg-yellow-400 hover:text-black border border-zinc-800 text-yellow-400 rounded-full transition-all"
-              title="Instagram @lpimportadosss_"
+              title="Instagram @lpimportadossss"
             >
               <AtSign className="w-5 h-5" />
             </a>
@@ -84,9 +84,9 @@ export const FooterContact: React.FC = () => {
                   href={`https://wa.me/${WHATSAPP_NUMBER}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-yellow-400 underline decoration-yellow-400/40"
+                  className="hover:text-yellow-400 underline decoration-yellow-400/40 font-semibold"
                 >
-                  (47) 99999-9999
+                  +55 (47) 8849-8542
                 </a>
               </div>
             </li>
@@ -96,12 +96,12 @@ export const FooterContact: React.FC = () => {
               <div>
                 <span className="font-extrabold text-white block">Instagram Oficial:</span>
                 <a
-                  href="https://instagram.com/lpimportadosss_"
+                  href="https://www.instagram.com/lpimportadossss?igsi=MXZvaGY1NXJlcnNmeA=="
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-yellow-400 underline decoration-yellow-400/40"
+                  className="hover:text-yellow-400 underline decoration-yellow-400/40 font-semibold"
                 >
-                  @lpimportadosss_
+                  @lpimportadossss
                 </a>
               </div>
             </li>
