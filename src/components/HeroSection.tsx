@@ -96,10 +96,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900/90 border border-yellow-500/40 rounded-full text-yellow-400 text-xs font-extrabold tracking-widest uppercase mb-5 shadow-lg backdrop-blur-md"
+            className="inline-flex items-center gap-2.5 px-5 py-2 bg-zinc-900/90 border border-yellow-500/40 rounded-full text-yellow-400 text-xs font-extrabold tracking-widest uppercase mb-5 shadow-[0_0_20px_rgba(250,204,21,0.15)] backdrop-blur-md"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Coleção Importada 2026</span>
+            <img src="/logo-transparent.png" alt="LP" className="h-5 w-auto object-contain brightness-110" />
+            <span className="text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.4)]">LP IMPORTADOS</span>
           </motion.div>
 
           {/* Main Title */}
