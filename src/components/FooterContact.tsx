@@ -63,8 +63,15 @@ export const FooterContact: React.FC = () => {
               <MapPin className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
               <div>
                 <span className="font-extrabold text-white block">Endereço da Loja:</span>
-                Rua José Honorato da Silva, 267<br />
-                Nova Esperança - Balneário Camboriú/SC
+                <a
+                  href="https://maps.google.com/?q=Rua+Jos%C3%A9+Honorato+da+Silva,+267+-+Nova+Esperan%C3%A7a,+Balne%C3%A1rio+Cambori%C3%BA+-+SC"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-300 hover:text-yellow-400 transition-colors leading-relaxed block"
+                >
+                  Rua José Honorato da Silva, 267<br />
+                  Nova Esperança — Balneário Camboriú / SC
+                </a>
               </div>
             </li>
 
