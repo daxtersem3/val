@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
@@ -102,18 +103,68 @@ export async function deleteProductFromDB(id: string): Promise<boolean> {
 }
 
 /**
- * Upload image file to Supabase Storage Bucket 'product-images' (or convert to Base64 fallback)
+ * Client-side lightweight image compressor (converts heavy phone photos to ~100-150KB WebP)
+ */
+async function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob || file);
+          },
+          'image/webp',
+          quality
+        );
+      } else {
+        resolve(file);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+
+    img.src = url;
+  });
+}
+
+/**
+ * Upload image file to Supabase Storage Bucket 'product-images' with auto-compression
  */
 export async function uploadProductImage(file: File): Promise<string> {
   if (supabase) {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      // 1. Compress image in browser before uploading
+      const compressedBlob = await compressImage(file);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
       const filePath = `products/${fileName}`;
 
       const { data, error } = await supabase.storage
         .from('product-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+        .upload(filePath, compressedBlob, {
+          contentType: 'image/webp',
+          cacheControl: '31536000',
+          upsert: true
+        });
 
       if (error) {
         console.error('Storage upload error:', error);
@@ -131,7 +182,7 @@ export async function uploadProductImage(file: File): Promise<string> {
     }
   }
 
-  // Fallback to DataURL/Base64 persistent string so image displays immediately & stays in state
+  // Fallback to DataURL/Base64 persistent string
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);

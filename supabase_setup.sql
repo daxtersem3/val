@@ -10,6 +10,7 @@ create table if not exists public.products (
   category text not null,
   price numeric not null,
   original_price numeric,
+  discount_percent numeric,
   images text[] default '{}',
   image text,
   description text,
@@ -20,7 +21,7 @@ create table if not exists public.products (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 2. Habilitar segurança em nível de linha (RLS) com acesso público de leitura/escrita
+-- 2. Habilitar segurança em nível de linha (RLS)
 alter table public.products enable row level security;
 
 create policy "Permitir leitura pública de produtos" on public.products
@@ -39,3 +40,9 @@ create policy "Permitir acesso público às imagens" on storage.objects
 
 create policy "Permitir upload de imagens" on storage.objects
   for insert with check (bucket_id = 'product-images');
+
+create policy "Permitir atualizar imagens" on storage.objects
+  for update using (bucket_id = 'product-images');
+
+create policy "Permitir deletar imagens" on storage.objects
+  for delete using (bucket_id = 'product-images');
