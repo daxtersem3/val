@@ -259,10 +259,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <img
-                    src="/logo.jpg"
+                    src="/favicon.png"
                     alt="LP Importados Logo"
-                    className="w-8 h-8 rounded-full border border-yellow-400 object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    className="w-8 h-8 rounded-full border border-yellow-400/60 object-cover"
                   />
                   <div>
                     <p className="text-[11px] font-bold text-white">LP IMPORTADOS SC</p>

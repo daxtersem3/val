@@ -15,9 +15,9 @@ export const FooterContact: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <img
-              src="/logo.jpg"
+              src="/favicon.png"
               alt="LP Importados"
-              className="w-12 h-12 rounded-full border-2 border-yellow-400 object-cover shadow-[0_0_15px_rgba(250,204,21,0.4)]"
+              className="w-12 h-12 rounded-full border border-yellow-400/60 object-cover shadow-[0_0_15px_rgba(250,204,21,0.4)]"
             />
             <div>
               <h3 className="font-black text-xl tracking-tight text-white">LP IMPORTADOS</h3>

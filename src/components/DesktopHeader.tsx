@@ -44,12 +44,9 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         >
           <div className="relative">
             <img
-              src="/logo.jpg"
+              src="/favicon.png"
               alt="LP Importados"
-              className="w-12 h-12 rounded-full border-2 border-yellow-400 object-cover shadow-[0_0_12px_rgba(250,204,21,0.4)] group-hover:scale-105 transition-transform"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              className="w-12 h-12 rounded-full border border-yellow-400/60 object-cover shadow-[0_0_15px_rgba(250,204,21,0.4)] group-hover:scale-105 transition-transform"
             />
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[9px] font-black text-black">
               ✓

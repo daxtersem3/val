@@ -61,10 +61,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           {/* Logo */}
           <div className="flex items-center gap-2 shrink-0">
             <img
-              src="/logo.jpg"
+              src="/favicon.png"
               alt="LP Importados"
-              className="w-9 h-9 rounded-full border-2 border-yellow-400 object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              className="w-9 h-9 rounded-full border border-yellow-400/60 object-cover"
             />
             <h1 className="font-black text-lg text-white hidden sm:block">
               LP <span className="text-yellow-400">IMPORTADOS</span>
