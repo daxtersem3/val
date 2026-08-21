@@ -70,7 +70,8 @@ export const FooterContact: React.FC = () => {
                   className="text-zinc-300 hover:text-yellow-400 transition-colors leading-relaxed block"
                 >
                   Rua José Honorato da Silva, 267<br />
-                  Nova Esperança — Balneário Camboriú / SC
+                  Nova Esperança — Balneário Camboriú / SC<br />
+                  <span className="text-[11px] text-zinc-400">CEP: 88336-070</span>
                 </a>
               </div>
             </li>
