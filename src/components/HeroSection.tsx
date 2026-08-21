@@ -122,7 +122,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-5 text-sm sm:text-base text-zinc-300 max-w-xl leading-relaxed font-normal drop-shadow-sm"
           >
-            Sua loja premium em Balneário Camboriú. Tênis, camisetas grifadas, conjuntos e perfumes importados com garantia de qualidade e envio imediato.
+            Sua loja premium em Balneário Camboriú. Camisetas grifadas, tênis, conjuntos, perfumes importados e acessórios. Qualidade selecionada e envio imediato.
           </motion.p>
 
           {/* CTAs */}
