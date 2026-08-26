@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Cookie, Shield, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Cookie, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CookieConsentProps {
   onOpenPrivacy: () => void;
@@ -88,15 +88,6 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({ onOpenPrivacy, onO
                   {showDetails ? 'Ocultar detalhes' : 'Ver detalhes dos cookies'}
                 </button>
               </div>
-
-              {/* Close (only dismiss, doesn't save consent) */}
-              <button
-                onClick={() => setIsVisible(false)}
-                className="shrink-0 p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors"
-                title="Fechar (sem salvar preferência)"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
             {/* Expanded Details */}
@@ -167,6 +158,14 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({ onOpenPrivacy, onO
                 className="py-3 px-6 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-wider rounded-xl border border-zinc-700 transition-all"
               >
                 SOMENTE ESSENCIAIS
+              </button>
+              <button
+                onClick={() => {
+                  window.location.href = 'https://www.google.com';
+                }}
+                className="py-3 px-6 bg-red-950 hover:bg-red-900 text-red-400 font-bold text-xs uppercase tracking-wider rounded-xl border border-red-800/50 transition-all"
+              >
+                RECUSAR
               </button>
             </div>
           </div>
