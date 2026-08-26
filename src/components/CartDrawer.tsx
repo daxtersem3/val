@@ -57,7 +57,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
     const formattedTotal = totalAmount.toFixed(2).replace('.', ',');
 
-    const message = `🛍️ *NOVO PEDIDO — LP IMPORTADOS* 🛍️
+    const message = `🔥🚀 *NOVO PEDIDO — LP IMPORTADOS* 🚀🔥
 -----------------------------------
 👤 *CLIENTE:* ${customer.name}
 📱 *WHATSAPP:* ${customer.phone || 'Não informado'}
