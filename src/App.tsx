@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Product, CartItem } from './types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from './data/initialProducts';
-import { SplashVideo } from './components/SplashVideo';
 import { DesktopHeader } from './components/DesktopHeader';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { HeroSection } from './components/HeroSection';
@@ -17,9 +16,6 @@ import { AnimatePresence } from 'motion/react';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
 
 export const App: React.FC = () => {
-  // Splash Video State — true by default
-  const [showSplash, setShowSplash] = useState<boolean>(true);
-
   // View state: 'home' or 'catalog'
   const [currentView, setCurrentView] = useState<'home' | 'catalog'>(() => {
     return window.location.hash === '#catalogo' ? 'catalog' : 'home';
@@ -182,13 +178,7 @@ export const App: React.FC = () => {
 
   const cartTotalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // 1. CLEAN SPLASH SCREEN ISOLATION:
-  // Render ONLY SplashVideo when active (nothing else in DOM behind it)
-  if (showSplash) {
-    return <SplashVideo onFinish={() => setShowSplash(false)} />;
-  }
-
-  // 2. DEDICATED CATALOG PAGE VIEW (#catalogo)
+  // 1. DEDICATED CATALOG PAGE VIEW (#catalogo)
   if (currentView === 'catalog') {
     return (
       <div className="min-h-screen bg-black text-white selection:bg-yellow-400 selection:text-black">
@@ -270,7 +260,6 @@ export const App: React.FC = () => {
         setSearchQuery={setSearchQuery}
         cartCount={cartTotalCount}
         onOpenCart={() => setIsCartOpen(true)}
-        onReplayVideo={() => setShowSplash(true)}
         activeSection={activeSection}
         setActiveSection={(sec) => {
           setActiveSection(sec);

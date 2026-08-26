@@ -1,12 +1,11 @@
 import React from 'react';
-import { ShoppingCart, Search, MessageCircle, RotateCcw } from 'lucide-react';
+import { ShoppingCart, Search, MessageCircle } from 'lucide-react';
 
 interface DesktopHeaderProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   cartCount: number;
   onOpenCart: () => void;
-  onReplayVideo: () => void;
   activeSection: string;
   setActiveSection: (section: string) => void;
 }
@@ -16,7 +15,6 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
   setSearchQuery,
   cartCount,
   onOpenCart,
-  onReplayVideo,
   activeSection,
   setActiveSection
 }) => {
@@ -117,15 +115,6 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          {/* Replay Video Intro */}
-          <button
-            onClick={onReplayVideo}
-            className="p-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-full border border-zinc-700 transition-all"
-            title="Ver Vídeo de Apresentação"
-          >
-            <RotateCcw className="w-4 h-4 text-yellow-400" />
-          </button>
-
           {/* WhatsApp Direct */}
           <a
             href={`https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20os%20produtos%20da%20LP%20Importados`}
