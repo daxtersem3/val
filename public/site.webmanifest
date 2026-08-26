@@ -1,0 +1,27 @@
+{
+  "name": "LP Importados — Moda Importada Premium",
+  "short_name": "LP Importados",
+  "description": "Loja premium de roupas, tênis, perfumes e acessórios importados em Balneário Camboriú. Gucci, Nike, Jordan, Trapstar e mais. Entrega rápida via WhatsApp.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#FACC15",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["shopping", "fashion", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

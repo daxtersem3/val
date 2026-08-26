@@ -1,0 +1,35 @@
+# LP Importados — Robots.txt
+# https://lpimportados.com
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /#admin
+
+# Sitemaps
+Sitemap: https://lpimportados.com/sitemap.xml
+
+# Crawl-delay (optional, respected by some bots)
+Crawl-delay: 5
+
+# Google
+User-agent: Googlebot
+Allow: /
+Disallow: /#admin
+
+# Google Images
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /#admin
+
+# Yandex
+User-agent: Yandex
+Allow: /
+
+# Baidu
+User-agent: Baiduspider
+Allow: /
