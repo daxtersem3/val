@@ -1,7 +1,12 @@
 import React from 'react';
-import { MapPin, Phone, MessageCircle, Clock, ShieldCheck, Heart, Sparkles, AtSign } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, Clock, ShieldCheck, Heart, Sparkles, AtSign, FileText, Lock } from 'lucide-react';
 
-export const FooterContact: React.FC = () => {
+interface FooterContactProps {
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
+}
+
+export const FooterContact: React.FC<FooterContactProps> = ({ onOpenPrivacy, onOpenTerms }) => {
   const WHATSAPP_NUMBER = '554788498542';
 
   return (
@@ -147,14 +152,34 @@ export const FooterContact: React.FC = () => {
       </div>
 
       {/* Copyright Bar */}
-      <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-zinc-800/80 text-center text-xs text-zinc-500 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p>© 2026 LP Importados. Todos os direitos reservados.</p>
-        <p className="flex items-center gap-1">
-          Feito com <Heart className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" /> para Balneário Camboriú/SC
-          <a href="#admin" className="ml-2 text-zinc-700 hover:text-zinc-500 text-[10px]" title="Área Restrita">
-            🔐 Admin
-          </a>
-        </p>
+      <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-zinc-800/80 text-xs text-zinc-500">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p>© 2026 LP Importados. Todos os direitos reservados.</p>
+          <p className="flex items-center gap-1">
+            Feito com <Heart className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" /> para Balneário Camboriú/SC
+            <a href="#admin" className="ml-2 text-zinc-700 hover:text-zinc-500 text-[10px]" title="Área Restrita">
+              🔐 Admin
+            </a>
+          </p>
+        </div>
+        {/* Legal Links */}
+        <div className="flex flex-wrap justify-center gap-4 mt-4 pb-2">
+          <button
+            onClick={onOpenPrivacy}
+            className="flex items-center gap-1.5 text-zinc-500 hover:text-yellow-400 transition-colors font-semibold"
+          >
+            <Lock className="w-3 h-3" />
+            Política de Privacidade
+          </button>
+          <span className="text-zinc-700">•</span>
+          <button
+            onClick={onOpenTerms}
+            className="flex items-center gap-1.5 text-zinc-500 hover:text-yellow-400 transition-colors font-semibold"
+          >
+            <FileText className="w-3 h-3" />
+            Termos e Condições
+          </button>
+        </div>
       </div>
     </footer>
   );

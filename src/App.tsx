@@ -11,6 +11,8 @@ import { CartDrawer } from './components/CartDrawer';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { CatalogPage } from './components/CatalogPage';
 import { FooterContact } from './components/FooterContact';
+import { CookieConsent } from './components/CookieConsent';
+import { LegalModals } from './components/LegalModals';
 import { fetchProductsFromDB, saveProductToDB, deleteProductFromDB, isSupabaseConfigured } from './lib/supabase';
 import { AnimatePresence } from 'motion/react';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
@@ -97,6 +99,7 @@ export const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
   // Cart Actions
   const handleAddToCart = (product: Product, size: string, qty: number = 1) => {
@@ -246,6 +249,16 @@ export const App: React.FC = () => {
           editingProduct={editingProduct}
           setEditingProduct={setEditingProduct}
         />
+
+        {/* Cookie Consent & Legal */}
+        <CookieConsent
+          onOpenPrivacy={() => setLegalModal('privacy')}
+          onOpenTerms={() => setLegalModal('terms')}
+        />
+        <LegalModals
+          activeModal={legalModal}
+          onClose={() => setLegalModal(null)}
+        />
       </div>
     );
   }
@@ -362,7 +375,10 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer & Contact Section */}
-      <FooterContact />
+      <FooterContact
+        onOpenPrivacy={() => setLegalModal('privacy')}
+        onOpenTerms={() => setLegalModal('terms')}
+      />
 
       {/* Custom Mobile Navigation Bar */}
       <MobileBottomNav
@@ -408,6 +424,16 @@ export const App: React.FC = () => {
         onDeleteProduct={handleDeleteProduct}
         editingProduct={editingProduct}
         setEditingProduct={setEditingProduct}
+      />
+
+      {/* Cookie Consent & Legal */}
+      <CookieConsent
+        onOpenPrivacy={() => setLegalModal('privacy')}
+        onOpenTerms={() => setLegalModal('terms')}
+      />
+      <LegalModals
+        activeModal={legalModal}
+        onClose={() => setLegalModal(null)}
       />
 
     </div>
