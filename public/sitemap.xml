@@ -5,28 +5,28 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://lpimportados.com/</loc>
-    <lastmod>2026-08-26</lastmod>
+    <loc>https://lpimportados.site/</loc>
+    <lastmod>2026-08-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://lpimportados.com/logo.png</image:loc>
+      <image:loc>https://lpimportados.site/logo.png</image:loc>
       <image:title>LP Importados — Moda Importada Premium</image:title>
     </image:image>
   </url>
 
   <!-- Catálogo Completo -->
   <url>
-    <loc>https://lpimportados.com/#catalogo</loc>
-    <lastmod>2026-08-26</lastmod>
+    <loc>https://lpimportados.site/#catalogo</loc>
+    <lastmod>2026-08-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Contato / WhatsApp -->
   <url>
-    <loc>https://lpimportados.com/#contato</loc>
-    <lastmod>2026-08-26</lastmod>
+    <loc>https://lpimportados.site/#contato</loc>
+    <lastmod>2026-08-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
