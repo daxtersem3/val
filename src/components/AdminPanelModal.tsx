@@ -3,7 +3,7 @@ import { Product, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Plus, Edit, Trash2, Save, Upload, CheckCircle, ShieldCheck, 
-  Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles
+  Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles, Camera
 } from 'lucide-react';
 import { uploadProductImage, isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -100,6 +100,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
+
+  // Quick Photo Manager state (inline in product list)
+  const [photoManagerId, setPhotoManagerId] = useState<string | null>(null);
+  const [photoManagerImages, setPhotoManagerImages] = useState<string[]>([]);
+  const [photoManagerSubclasses, setPhotoManagerSubclasses] = useState<Record<number, string>>({});
+  const [photoManagerUploading, setPhotoManagerUploading] = useState(false);
+  const [photoManagerSaved, setPhotoManagerSaved] = useState(false);
+  const [photoManagerUrlInput, setPhotoManagerUrlInput] = useState('');
 
   // Multi-image form data
   const [formData, setFormData] = useState({
@@ -268,6 +276,72 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const startEdit = (p: Product) => {
     setEditingProduct(p);
+  };
+
+  // ======================================
+  // QUICK PHOTO MANAGER HANDLERS
+  // ======================================
+  const openPhotoManager = (prod: Product) => {
+    if (photoManagerId === prod.id) {
+      setPhotoManagerId(null);
+      return;
+    }
+    setPhotoManagerId(prod.id);
+    setPhotoManagerImages([...(prod.images || [])]);
+    setPhotoManagerSubclasses({ ...(prod.imageSubclasses || {}) });
+    setPhotoManagerSaved(false);
+    setPhotoManagerUrlInput('');
+  };
+
+  const pmRemoveImage = (idx: number) => {
+    const newImages = photoManagerImages.filter((_, i) => i !== idx);
+    const newSub: Record<number, string> = {};
+    let newIdx = 0;
+    for (let i = 0; i < photoManagerImages.length; i++) {
+      if (i === idx) continue;
+      if (photoManagerSubclasses[i]) newSub[newIdx] = photoManagerSubclasses[i];
+      newIdx++;
+    }
+    setPhotoManagerImages(newImages);
+    setPhotoManagerSubclasses(newSub);
+  };
+
+  const pmFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setPhotoManagerUploading(true);
+    try {
+      const urls = await Promise.all(Array.from(files).map(f => uploadProductImage(f)));
+      setPhotoManagerImages(prev => [...prev, ...urls]);
+    } catch {
+      alert('Erro ao carregar imagem.');
+    } finally {
+      setPhotoManagerUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const pmAddUrl = () => {
+    const url = photoManagerUrlInput.trim();
+    if (!url) return;
+    setPhotoManagerImages(prev => [...prev, url]);
+    setPhotoManagerUrlInput('');
+  };
+
+  const pmSave = () => {
+    const prod = products.find(p => p.id === photoManagerId);
+    if (!prod) return;
+    const cleanSub: Record<number, string> = {};
+    Object.entries(photoManagerSubclasses).forEach(([k, v]) => {
+      if (v && v.trim()) cleanSub[Number(k)] = v.trim();
+    });
+    onUpdateProduct({
+      ...prod,
+      images: photoManagerImages,
+      imageSubclasses: Object.keys(cleanSub).length > 0 ? cleanSub : undefined,
+    });
+    setPhotoManagerSaved(true);
+    setTimeout(() => setPhotoManagerSaved(false), 1500);
   };
 
   return (
@@ -717,58 +791,165 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
                     ) : (
                       products.map((prod) => (
-                        <div
-                          key={prod.id}
-                          className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-between gap-4"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <img 
-                              src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'} 
-                              alt={prod.name} 
-                              className="w-14 h-14 rounded-xl object-cover shrink-0 border border-zinc-800" 
-                            />
-                            {/* Small thumbnails for extra images */}
-                            {prod.images && prod.images.length > 1 && (
-                              <div className="flex gap-1 shrink-0">
-                                {prod.images.slice(1, 3).map((img, idx) => (
-                                  <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-cover border border-zinc-700 opacity-60" />
-                                ))}
-                                {prod.images.length > 3 && (
-                                  <span className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400">
-                                    +{prod.images.length - 3}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-extrabold text-white truncate">{prod.name}</h4>
-                            <p className="text-xs text-yellow-400 font-black">
-                              R$ {prod.price.toFixed(2).replace('.', ',')} • {prod.category} • {prod.images?.length || 0} fotos
-                            </p>
+                        <div key={prod.id} className="space-y-0">
+                          <div
+                            className={`p-4 bg-zinc-900 border border-zinc-800 flex items-center justify-between gap-4 ${
+                              photoManagerId === prod.id ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img 
+                                src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'} 
+                                alt={prod.name} 
+                                className="w-14 h-14 rounded-xl object-cover shrink-0 border border-zinc-800" 
+                              />
+                              {/* Small thumbnails for extra images */}
+                              {prod.images && prod.images.length > 1 && (
+                                <div className="flex gap-1 shrink-0">
+                                  {prod.images.slice(1, 3).map((img, idx) => (
+                                    <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-cover border border-zinc-700 opacity-60" />
+                                  ))}
+                                  {prod.images.length > 3 && (
+                                    <span className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400">
+                                      +{prod.images.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-extrabold text-white truncate">{prod.name}</h4>
+                              <p className="text-xs text-yellow-400 font-black">
+                                R$ {prod.price.toFixed(2).replace('.', ',')} • {prod.category} • {prod.images?.length || 0} fotos
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2 shrink-0">
+                              <button
+                                onClick={() => openPhotoManager(prod)}
+                                className={`p-2.5 font-bold rounded-xl transition-all shadow ${
+                                  photoManagerId === prod.id
+                                    ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+                                    : 'bg-zinc-700 text-white hover:bg-zinc-600'
+                                }`}
+                                title="Gerenciar Fotos"
+                              >
+                                <Camera className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => startEdit(prod)}
+                                className="p-2.5 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-all shadow"
+                                title="Editar Produto Completo"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Excluir ${prod.name}?`)) {
+                                    onDeleteProduct(prod.id);
+                                  }
+                                }}
+                                className="p-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-500 transition-all shadow"
+                                title="Excluir"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="flex gap-2 shrink-0">
-                            <button
-                              onClick={() => startEdit(prod)}
-                              className="p-2.5 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-all shadow"
-                              title="Editar"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Excluir ${prod.name}?`)) {
-                                  onDeleteProduct(prod.id);
-                                }
-                              }}
-                              className="p-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-500 transition-all shadow"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                          {/* ===== INLINE QUICK PHOTO MANAGER ===== */}
+                          {photoManagerId === prod.id && (
+                            <div className="p-4 bg-zinc-950 border border-zinc-800 border-t-0 rounded-b-2xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                                  <Camera className="w-3.5 h-3.5 text-yellow-400" />
+                                  Gerenciar Fotos — {photoManagerImages.length} foto{photoManagerImages.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+
+                              {/* Photo Grid with subclass inputs */}
+                              {photoManagerImages.length > 0 && (
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                  {photoManagerImages.map((imgUrl, idx) => (
+                                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700/80 bg-zinc-900 shadow-md flex flex-col">
+                                      <div className="relative aspect-square">
+                                        <img src={imgUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <button
+                                          type="button"
+                                          onClick={() => pmRemoveImage(idx)}
+                                          className="absolute top-1 right-1 w-5 h-5 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                          title="Remover"
+                                        >
+                                          ✕
+                                        </button>
+                                        <span className={`absolute bottom-1 left-1 text-[8px] font-black px-1.5 py-0.5 rounded-md shadow ${
+                                          idx === 0 ? 'bg-yellow-400 text-black' : 'bg-black/80 text-white'
+                                        }`}>
+                                          {idx === 0 ? 'CAPA' : `#${idx + 1}`}
+                                        </span>
+                                      </div>
+                                      <div className="p-1">
+                                        <input
+                                          type="text"
+                                          placeholder="Cor..."
+                                          value={photoManagerSubclasses[idx] || ''}
+                                          onChange={(e) => setPhotoManagerSubclasses(prev => ({ ...prev, [idx]: e.target.value }))}
+                                          className="w-full bg-zinc-900 border border-zinc-700/60 rounded-md px-1.5 py-0.5 text-[9px] text-white placeholder-zinc-500 focus:border-yellow-400 focus:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Add photos controls */}
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="text"
+                                  placeholder="Cole URL da imagem..."
+                                  value={photoManagerUrlInput}
+                                  onChange={(e) => setPhotoManagerUrlInput(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); pmAddUrl(); } }}
+                                  className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-xl px-3 py-2 text-xs text-white focus:border-yellow-400 focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={pmAddUrl}
+                                  className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-xl text-[10px] font-bold text-white flex items-center gap-1 transition-all"
+                                >
+                                  <Plus className="w-3 h-3 text-yellow-400" /> URL
+                                </button>
+                                <label className={`px-3 py-2 bg-yellow-400 hover:bg-yellow-300 text-black rounded-xl text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition-all shadow ${
+                                  photoManagerUploading ? 'opacity-50 pointer-events-none' : ''
+                                }`}>
+                                  {photoManagerUploading ? (
+                                    <><Loader2 className="w-3 h-3 animate-spin" /> Subindo...</>
+                                  ) : (
+                                    <><Upload className="w-3 h-3" /> Foto</>
+                                  )}
+                                  <input type="file" accept="image/*" multiple disabled={photoManagerUploading} onChange={pmFileUpload} className="hidden" />
+                                </label>
+                              </div>
+
+                              {/* Save button */}
+                              <button
+                                type="button"
+                                onClick={pmSave}
+                                className={`w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow cursor-pointer ${
+                                  photoManagerSaved
+                                    ? 'bg-emerald-500 text-black'
+                                    : 'bg-yellow-400 hover:bg-yellow-300 text-black'
+                                }`}
+                              >
+                                {photoManagerSaved ? (
+                                  <><CheckCircle className="w-4 h-4" /> FOTOS ATUALIZADAS!</>
+                                ) : (
+                                  <><Save className="w-4 h-4" /> SALVAR FOTOS</>
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}
