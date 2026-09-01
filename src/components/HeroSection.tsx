@@ -5,75 +5,48 @@ import { Product } from '../types';
 
 interface HeroSectionProps {
   featuredProducts?: Product[];
+  fallbackProducts?: Product[];
+  isLoading?: boolean;
   onExploreProducts: () => void;
   onSelectProduct?: (product: Product) => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   featuredProducts = [],
+  fallbackProducts = [],
+  isLoading = false,
   onExploreProducts,
   onSelectProduct
 }) => {
   const WHATSAPP_NUMBER = '554788498542';
 
-  // Fallback defaults if no featured products
-  const displayItems = featuredProducts.length > 0 ? featuredProducts : [
-    {
-      id: 'prod-2',
-      name: 'Air Jordan 1 High OG Yellow Toe',
-      category: 'tenis',
-      price: 749.00,
-      originalPrice: 899.00,
-      images: ['https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=800&q=80'],
-      description: '',
-      sizes: [],
-      inStock: true,
-      badge: 'EXCLUSIVO' as const
-    },
-    {
-      id: 'prod-1',
-      name: 'Camiseta Nike Tech Oversized Black Gold',
-      category: 'camisetas',
-      price: 189.90,
-      originalPrice: 249.90,
-      images: ['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80'],
-      description: '',
-      sizes: [],
-      inStock: true,
-      badge: 'BEST-SELLER' as const
-    },
-    {
-      id: 'prod-3',
-      name: 'Conjunto Trapstar London Black Edition',
-      category: 'conjuntos',
-      price: 459.90,
-      originalPrice: 580.00,
-      images: ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80'],
-      description: '',
-      sizes: [],
-      inStock: true,
-      badge: 'NOVO' as const
-    }
-  ];
+  // Use featured products if available; otherwise use the first few products from catalog
+  const displayItems = featuredProducts.length > 0 
+    ? featuredProducts 
+    : fallbackProducts.slice(0, 4);
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto rotate featured products every 3 seconds
+  // Auto rotate featured products every 3.5 seconds
   useEffect(() => {
     if (displayItems.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % displayItems.length);
-    }, 3000);
+    }, 3500);
     return () => clearInterval(timer);
   }, [displayItems.length]);
 
-  const currentItem = displayItems[currentIndex] || displayItems[0];
+  // Keep index within bounds if list length changes
+  const activeIndex = currentIndex >= displayItems.length ? 0 : currentIndex;
+  const currentItem = displayItems[activeIndex];
 
   const nextSlide = () => {
+    if (displayItems.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % displayItems.length);
   };
 
   const prevSlide = () => {
+    if (displayItems.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + displayItems.length) % displayItems.length);
   };
 
@@ -174,7 +147,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         </div>
 
-        {/* Right Column: Dynamic Featured Carousel (3s Auto-Rotating) */}
+        {/* Right Column: Dynamic Featured Carousel / Skeleton */}
         <div className="lg:col-span-5 flex justify-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -182,101 +155,141 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.5 }}
             className="relative w-full max-w-md"
           >
-            <div className="relative bg-zinc-900/90 border border-zinc-800 p-5 rounded-3xl shadow-2xl overflow-hidden group backdrop-blur-md">
-              
-              {/* Product Hero Image Carousel */}
-              <div 
-                onClick={() => onSelectProduct?.(currentItem)}
-                className="relative h-72 rounded-2xl overflow-hidden bg-black mb-4 cursor-pointer"
-              >
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentItem.id}
-                    initial={{ opacity: 0, scale: 1.05 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.4 }}
-                    src={currentItem.images?.[0] || ''}
-                    alt={currentItem.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </AnimatePresence>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
-                
-                {/* Badge */}
-                <span className="absolute top-3 left-3 bg-yellow-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
-                  {currentItem.badge || 'DESTAQUE DA SEMANA'}
-                </span>
-
-                {/* Left/Right Arrows for Manual Slide */}
-                {displayItems.length > 1 && (
-                  <>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); prevSlide(); }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-yellow-400 text-white hover:text-black rounded-full transition-all backdrop-blur-sm"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); nextSlide(); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-yellow-400 text-white hover:text-black rounded-full transition-all backdrop-blur-sm"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-
-                {/* Product Title & Price */}
-                <div className="absolute bottom-3 left-4 right-4">
-                  <h3 className="text-base font-black text-white uppercase line-clamp-1">{currentItem.name}</h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-yellow-400 font-black text-lg">
-                      R$ {currentItem.price.toFixed(2).replace('.', ',')}
-                    </span>
-                    {currentItem.originalPrice && (
-                      <span className="text-xs text-zinc-400 line-through">
-                        R$ {currentItem.originalPrice.toFixed(2).replace('.', ',')}
-                      </span>
-                    )}
+            {isLoading ? (
+              /* Hero Card Skeleton */
+              <div className="bg-zinc-900/90 border border-zinc-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md animate-pulse">
+                <div className="relative h-72 rounded-2xl bg-zinc-800/70 mb-4 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-700/50" />
+                  <div className="absolute top-3 left-3 w-28 h-5 rounded-full bg-zinc-700/60" />
+                  <div className="absolute bottom-3 left-4 right-4 space-y-2">
+                    <div className="h-5 w-3/4 rounded bg-zinc-700/70" />
+                    <div className="h-4 w-1/3 rounded bg-zinc-700/60" />
                   </div>
                 </div>
-              </div>
-
-              {/* Dots & Info Box */}
-              <div className="flex justify-center gap-1.5 mb-3">
-                {displayItems.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === currentIndex ? 'w-6 bg-yellow-400' : 'w-1.5 bg-zinc-700'
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src="/favicon.png"
-                    alt="LP Importados Logo"
-                    className="w-8 h-8 rounded-full border border-yellow-400/60 object-cover"
-                  />
-                  <div>
-                    <p className="text-[11px] font-bold text-white">LP IMPORTADOS SC</p>
-                    <p className="text-[9px] text-zinc-400">@lpimportadossss</p>
-                  </div>
+                <div className="flex justify-center gap-1.5 mb-3">
+                  <div className="w-6 h-1.5 rounded-full bg-zinc-700" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
                 </div>
-                <button
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-zinc-800" />
+                    <div className="space-y-1">
+                      <div className="w-24 h-3 rounded bg-zinc-800" />
+                      <div className="w-16 h-2 rounded bg-zinc-800/60" />
+                    </div>
+                  </div>
+                  <div className="w-24 h-7 rounded-lg bg-zinc-800" />
+                </div>
+              </div>
+            ) : currentItem ? (
+              <div className="relative bg-zinc-900/90 border border-zinc-800 p-5 rounded-3xl shadow-2xl overflow-hidden group backdrop-blur-md">
+                {/* Product Hero Image Carousel */}
+                <div 
                   onClick={() => onSelectProduct?.(currentItem)}
-                  className="px-3 py-1.5 bg-yellow-400 text-black text-[11px] font-black rounded-lg hover:bg-yellow-300 transition-colors"
+                  className="relative h-72 rounded-2xl overflow-hidden bg-black mb-4 cursor-pointer"
                 >
-                  VER PRODUTO
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={currentItem.id}
+                      initial={{ opacity: 0, scale: 1.05 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.4 }}
+                      src={currentItem.images?.[0] || ''}
+                      alt={currentItem.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </AnimatePresence>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+                  
+                  {/* Badge */}
+                  <span className="absolute top-3 left-3 bg-yellow-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
+                    {currentItem.badge || 'DESTAQUE DA SEMANA'}
+                  </span>
+
+                  {/* Left/Right Arrows for Manual Slide */}
+                  {displayItems.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); prevSlide(); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-yellow-400 text-white hover:text-black rounded-full transition-all backdrop-blur-sm"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); nextSlide(); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-yellow-400 text-white hover:text-black rounded-full transition-all backdrop-blur-sm"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Product Title & Price */}
+                  <div className="absolute bottom-3 left-4 right-4">
+                    <h3 className="text-base font-black text-white uppercase line-clamp-1">{currentItem.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-yellow-400 font-black text-lg">
+                        R$ {currentItem.price.toFixed(2).replace('.', ',')}
+                      </span>
+                      {currentItem.originalPrice && (
+                        <span className="text-xs text-zinc-400 line-through">
+                          R$ {currentItem.originalPrice.toFixed(2).replace('.', ',')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dots & Info Box */}
+                <div className="flex justify-center gap-1.5 mb-3">
+                  {displayItems.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === activeIndex ? 'w-6 bg-yellow-400' : 'w-1.5 bg-zinc-700'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/favicon.png"
+                      alt="LP Importados Logo"
+                      className="w-8 h-8 rounded-full border border-yellow-400/60 object-cover"
+                    />
+                    <div>
+                      <p className="text-[11px] font-bold text-white">LP IMPORTADOS SC</p>
+                      <p className="text-[9px] text-zinc-400">@lpimportadossss</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onSelectProduct?.(currentItem)}
+                    className="px-3 py-1.5 bg-yellow-400 text-black text-[11px] font-black rounded-lg hover:bg-yellow-300 transition-colors"
+                  >
+                    VER PRODUTO
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Fallback if no products in store yet */
+              <div className="bg-zinc-900/90 border border-zinc-800 p-8 rounded-3xl shadow-2xl backdrop-blur-md text-center">
+                <Sparkles className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
+                <h3 className="text-lg font-black text-white uppercase">LP Importados SC</h3>
+                <p className="text-xs text-zinc-400 mt-2">Peças e calçados exclusivos direto no WhatsApp.</p>
+                <button
+                  onClick={onExploreProducts}
+                  className="mt-5 px-6 py-2.5 bg-yellow-400 text-black font-extrabold text-xs uppercase rounded-xl hover:bg-yellow-300 transition-all"
+                >
+                  Ver Catálogo
                 </button>
               </div>
-
-            </div>
+            )}
           </motion.div>
         </div>
 

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
+import { ProductGridSkeleton } from './ProductSkeleton';
 import { PackageSearch } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
+  isLoading?: boolean;
   onAddToCart: (product: Product, size: string) => void;
   onQuickView: (product: Product) => void;
   isAdmin?: boolean;
@@ -15,6 +17,7 @@ interface ProductGridProps {
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
   products,
+  isLoading = false,
   onAddToCart,
   onQuickView,
   isAdmin = false,
@@ -22,6 +25,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onDeleteProduct,
   onAddNewClick
 }) => {
+  if (isLoading) {
+    return <ProductGridSkeleton count={8} />;
+  }
+
   if (products.length === 0) {
     return (
       <div className="py-20 px-4 text-center bg-zinc-900/60 border border-zinc-800 rounded-3xl max-w-2xl mx-auto my-8">

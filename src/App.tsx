@@ -40,8 +40,13 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Products State with localStorage persistence
+  // Products State & Initial Load
+  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
   const [products, setProducts] = useState<Product[]>(() => {
+    if (isSupabaseConfigured) {
+      // Avoid flashing dummy/deleted products on start when connected to Supabase
+      return [];
+    }
     try {
       const saved = localStorage.getItem('lp_importados_products');
       return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
@@ -52,24 +57,36 @@ export const App: React.FC = () => {
 
   // Load from Supabase DB on startup if configured
   useEffect(() => {
+    let isMounted = true;
     async function loadDB() {
       if (isSupabaseConfigured) {
+        setIsLoading(true);
         const dbProducts = await fetchProductsFromDB();
-        if (dbProducts && dbProducts.length > 0) {
-          setProducts(dbProducts);
+        if (isMounted) {
+          if (dbProducts !== null) {
+            setProducts(dbProducts);
+          }
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     }
     loadDB();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('lp_importados_products', JSON.stringify(products));
-    } catch (e) {
-      console.error('Error saving products:', e);
+    if (!isLoading) {
+      try {
+        localStorage.setItem('lp_importados_products', JSON.stringify(products));
+      } catch (e) {
+        console.error('Error saving products:', e);
+      }
     }
-  }, [products]);
+  }, [products, isLoading]);
 
   // Cart State with localStorage persistence
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -188,6 +205,7 @@ export const App: React.FC = () => {
         <CatalogPage
           products={products}
           categories={INITIAL_CATEGORIES}
+          isLoading={isLoading}
           onAddToCart={(p, sz) => handleAddToCart(p, sz, 1)}
           onQuickView={(p) => setQuickViewProduct(p)}
           onGoBack={() => {
@@ -286,6 +304,8 @@ export const App: React.FC = () => {
       {/* Main Hero Section with Auto-Rotating 3s Carousel */}
       <HeroSection
         featuredProducts={featuredProducts}
+        fallbackProducts={products}
+        isLoading={isLoading}
         onExploreProducts={() => {
           window.location.hash = '#catalogo';
           setCurrentView('catalog');
@@ -325,7 +345,13 @@ export const App: React.FC = () => {
         <div className="flex items-center justify-between mb-6 text-xs text-zinc-400 font-bold border-b border-zinc-800 pb-3">
           <span className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-yellow-400" />
-            Exibindo <strong className="text-yellow-400">{homeCatalogProducts.length}</strong> produtos em destaque
+            {isLoading ? (
+              <span className="text-zinc-500 animate-pulse">Carregando catálogo...</span>
+            ) : (
+              <>
+                Exibindo <strong className="text-yellow-400">{homeCatalogProducts.length}</strong> produtos em destaque
+              </>
+            )}
           </span>
 
           <button
@@ -343,6 +369,7 @@ export const App: React.FC = () => {
         {/* Product Grid */}
         <ProductGrid
           products={homeCatalogProducts}
+          isLoading={isLoading}
           onAddToCart={(p, sz) => handleAddToCart(p, sz, 1)}
           onQuickView={(p) => setQuickViewProduct(p)}
           isAdmin={isAdminOpen}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, Category } from '../types';
 import { ProductCard } from './ProductCard';
+import { ProductGridSkeleton } from './ProductSkeleton';
 import { CategoryFilter } from './CategoryFilter';
 import { motion } from 'motion/react';
 import { ArrowLeft, Search, Sparkles, ShoppingBag, PackageSearch } from 'lucide-react';
@@ -8,6 +9,7 @@ import { ArrowLeft, Search, Sparkles, ShoppingBag, PackageSearch } from 'lucide-
 interface CatalogPageProps {
   products: Product[];
   categories: Category[];
+  isLoading?: boolean;
   onAddToCart: (product: Product, size: string) => void;
   onQuickView: (product: Product) => void;
   onGoBack: () => void;
@@ -19,6 +21,7 @@ interface CatalogPageProps {
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   products,
   categories,
+  isLoading = false,
   onAddToCart,
   onQuickView,
   onGoBack,
@@ -124,11 +127,17 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         <div className="flex items-center justify-between mb-6 text-xs text-zinc-400 font-bold border-b border-zinc-800 pb-3">
           <span className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-yellow-400" />
-            Exibindo <strong className="text-yellow-400">{filteredProducts.length}</strong> produtos
-            {selectedCategory !== 'all' && (
-              <span className="text-zinc-500">
-                em "{categories.find(c => c.id === selectedCategory)?.name || selectedCategory}"
-              </span>
+            {isLoading ? (
+              <span className="text-zinc-500 animate-pulse">Carregando catálogo...</span>
+            ) : (
+              <>
+                Exibindo <strong className="text-yellow-400">{filteredProducts.length}</strong> produtos
+                {selectedCategory !== 'all' && (
+                  <span className="text-zinc-500">
+                    em "{categories.find(c => c.id === selectedCategory)?.name || selectedCategory}"
+                  </span>
+                )}
+              </>
             )}
           </span>
 
@@ -142,8 +151,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           )}
         </div>
 
-        {/* Product Grid */}
-        {filteredProducts.length === 0 ? (
+        {/* Product Grid / Skeleton */}
+        {isLoading ? (
+          <ProductGridSkeleton count={8} />
+        ) : filteredProducts.length === 0 ? (
           <div className="py-20 px-4 text-center bg-zinc-900/60 border border-zinc-800 rounded-3xl max-w-2xl mx-auto">
             <PackageSearch className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
             <h3 className="text-xl font-black text-white uppercase">Nenhum produto encontrado</h3>
