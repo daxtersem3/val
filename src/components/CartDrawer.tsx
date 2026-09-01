@@ -49,10 +49,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       return;
     }
 
+    const CATEGORIES_WITH_SIZES = ['camisetas', 'tenis', 'conjuntos'];
+
     let itemsList = '';
     cartItems.forEach((item, index) => {
       const itemTotal = (item.product.price * item.quantity).toFixed(2).replace('.', ',');
-      itemsList += `\n${index + 1}. *${item.product.name}*\n   • Tamanho: ${item.selectedSize}\n   • Quantidade: ${item.quantity}x\n   • Valor: R$ ${itemTotal}\n`;
+      const sizeLine = CATEGORIES_WITH_SIZES.includes(item.product.category)
+        ? `\n   • Tamanho: ${item.selectedSize}`
+        : '';
+      itemsList += `\n${index + 1}. *${item.product.name}*${sizeLine}\n   • Quantidade: ${item.quantity}x\n   • Valor: R$ ${itemTotal}\n`;
     });
 
     const formattedTotal = totalAmount.toFixed(2).replace('.', ',');
@@ -137,9 +142,11 @@ Aguardando confirmação e chave PIX para envio!`;
 
                   <div className="flex-1">
                     <h4 className="text-xs font-bold text-white line-clamp-1">{item.product.name}</h4>
-                    <span className="inline-block mt-1 text-[10px] font-extrabold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded-md">
-                      Tamanho: {item.selectedSize}
-                    </span>
+                    {['camisetas', 'tenis', 'conjuntos'].includes(item.product.category) && (
+                      <span className="inline-block mt-1 text-[10px] font-extrabold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded-md">
+                        Tamanho: {item.selectedSize}
+                      </span>
+                    )}
                     <div className="text-sm font-black text-yellow-400 mt-1">
                       R$ {(item.product.price * item.quantity).toFixed(2).replace('.', ',')}
                     </div>

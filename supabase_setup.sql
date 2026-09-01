@@ -18,6 +18,7 @@ create table if not exists public.products (
   badge text,
   featured boolean default false,
   in_stock boolean default true,
+  image_subclasses jsonb default '{}',
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 

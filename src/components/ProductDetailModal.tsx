@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingCart, Check, ShieldCheck, Truck, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -9,6 +9,35 @@ interface ProductDetailModalProps {
   onAddToCart: (product: Product, size: string, qty: number) => void;
 }
 
+// Categories that require size selection (clothing/shoes)
+const CATEGORIES_WITH_SIZES = ['camisetas', 'tenis', 'conjuntos'];
+
+// Map of color names (Portuguese, lowercase) → hex codes for visual dots
+const COLOR_HEX_MAP: Record<string, string> = {
+  verde: '#22c55e',
+  vermelho: '#ef4444',
+  azul: '#3b82f6',
+  preto: '#18181b',
+  branco: '#f4f4f5',
+  rosa: '#ec4899',
+  amarelo: '#eab308',
+  cinza: '#71717a',
+  marrom: '#92400e',
+  roxo: '#a855f7',
+  laranja: '#f97316',
+  bege: '#d4a574',
+  dourado: '#d4a017',
+  prata: '#c0c0c0',
+  vinho: '#722f37',
+  turquesa: '#40e0d0',
+  coral: '#ff7f50',
+  navy: '#1e3a5f',
+};
+
+function getColorHex(colorName: string): string {
+  return COLOR_HEX_MAP[colorName.toLowerCase().trim()] || '#a1a1aa';
+}
+
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   onClose,
@@ -16,14 +45,46 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   if (!product) return null;
 
-  const images = product.images && product.images.length > 0 ? product.images : [''];
+  const allImages = product.images && product.images.length > 0 ? product.images : [''];
+  const subclasses = product.imageSubclasses || {};
+
+  // Extract unique color names from subclasses
+  const availableColors = useMemo(() => {
+    const colors = new Set<string>();
+    Object.values(subclasses).forEach((c) => {
+      if (c && c.trim()) colors.add(c.trim());
+    });
+    return Array.from(colors);
+  }, [subclasses]);
+
+  const hasSubclasses = availableColors.length > 0;
+
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+
+  // Filter images by selected color
+  const filteredImages = useMemo(() => {
+    if (!selectedColor || !hasSubclasses) return allImages;
+    const filtered = allImages.filter((_, idx) => {
+      const imgColor = subclasses[idx];
+      return imgColor && imgColor.trim().toLowerCase() === selectedColor.toLowerCase();
+    });
+    return filtered.length > 0 ? filtered : allImages;
+  }, [selectedColor, allImages, subclasses, hasSubclasses]);
+
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const needsSize = CATEGORIES_WITH_SIZES.includes(product.category);
   const [selectedSize, setSelectedSize] = useState<string>(
-    product.sizes.length > 0 ? product.sizes[0] : 'Único'
+    needsSize && product.sizes.length > 0 ? product.sizes[0] : 'Único'
   );
   const [quantity, setQuantity] = useState<number>(1);
   const [added, setAdded] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
+
+  // Reset currentImageIdx when color filter changes
+  const handleColorSelect = (color: string | null) => {
+    setSelectedColor(color);
+    setCurrentImageIdx(0);
+  };
 
   const handleAdd = () => {
     onAddToCart(product, selectedSize, quantity);
@@ -38,8 +99,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     setSwipeDirection(dir);
     setCurrentImageIdx((prev) => {
       const next = prev + dir;
-      if (next < 0) return images.length - 1;
-      if (next >= images.length) return 0;
+      if (next < 0) return filteredImages.length - 1;
+      if (next >= filteredImages.length) return 0;
       return next;
     });
   };
@@ -85,7 +146,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="w-full md:w-1/2 relative bg-zinc-950 h-72 md:h-auto min-h-[300px] overflow-hidden">
             <AnimatePresence initial={false} custom={swipeDirection} mode="popLayout">
               <motion.img
-                key={`img-${currentImageIdx}`}
+                key={`img-${currentImageIdx}-${selectedColor}`}
                 custom={swipeDirection}
                 variants={slideVariants}
                 initial="enter"
@@ -96,7 +157,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.3}
                 onDragEnd={handleDragEnd}
-                src={images[currentImageIdx]}
+                src={filteredImages[currentImageIdx]}
                 alt={`${product.name} - Foto ${currentImageIdx + 1}`}
                 className="absolute inset-0 w-full h-full object-cover cursor-grab active:cursor-grabbing"
               />
@@ -117,7 +178,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Navigation Arrows (only if >1 image) */}
-            {images.length > 1 && (
+            {filteredImages.length > 1 && (
               <>
                 <button
                   onClick={() => goToImage(-1)}
@@ -135,9 +196,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             )}
 
             {/* Dot Indicators */}
-            {images.length > 1 && (
+            {filteredImages.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-                {images.map((_, idx) => (
+                {filteredImages.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => {
@@ -155,9 +216,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             )}
 
             {/* Image Counter */}
-            {images.length > 1 && (
+            {filteredImages.length > 1 && (
               <span className="absolute top-4 right-4 z-10 bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                {currentImageIdx + 1} / {images.length}
+                {currentImageIdx + 1} / {filteredImages.length}
               </span>
             )}
           </div>
@@ -172,6 +233,48 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <h2 className="text-2xl font-black text-white mt-1 uppercase leading-tight">
                 {product.name}
               </h2>
+
+              {/* ============================================ */}
+              {/* COLOR / SUBCLASS FILTER BUTTONS               */}
+              {/* ============================================ */}
+              {hasSubclasses && (
+                <div className="mt-4">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-wider block mb-2">
+                    Cor / Subclasse:
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {/* "Todas" button */}
+                    <button
+                      onClick={() => handleColorSelect(null)}
+                      className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all flex items-center gap-1.5 ${
+                        selectedColor === null
+                          ? 'bg-yellow-400 border-yellow-400 text-black shadow-lg scale-105'
+                          : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {/* Color buttons */}
+                    {availableColors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => handleColorSelect(color)}
+                        className={`px-3 py-1.5 text-xs font-black rounded-xl border transition-all flex items-center gap-1.5 ${
+                          selectedColor === color
+                            ? 'bg-zinc-800 border-yellow-400 text-white shadow-lg scale-105 ring-1 ring-yellow-400'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-600'
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0"
+                          style={{ backgroundColor: getColorHex(color) }}
+                        />
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mt-3">
@@ -189,8 +292,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.description}
               </p>
 
-              {/* Sizes Selection */}
-              {product.sizes && product.sizes.length > 0 && (
+              {/* Sizes Selection — only for clothing/shoes categories */}
+              {needsSize && product.sizes && product.sizes.length > 0 && (
                 <div className="mt-6">
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-wider block mb-2">
                     Selecione o Tamanho:

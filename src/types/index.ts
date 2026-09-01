@@ -6,6 +6,7 @@ export interface Product {
   originalPrice?: number;
   discountPercent?: number;
   images: string[];
+  imageSubclasses?: Record<number, string>; // mapa: índice da imagem → nome da cor/subclasse
   description: string;
   sizes: string[];
   colors?: string[];

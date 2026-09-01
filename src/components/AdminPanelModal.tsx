@@ -109,6 +109,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     originalPrice: '',
     discountPercent: '',
     images: [] as string[],
+    imageSubclasses: {} as Record<number, string>,
     description: '',
     sizes: 'P, M, G, GG',
     badge: 'NOVO',
@@ -126,6 +127,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         originalPrice: editingProduct.originalPrice ? editingProduct.originalPrice.toString() : '',
         discountPercent: editingProduct.discountPercent ? editingProduct.discountPercent.toString() : '',
         images: editingProduct.images || [],
+        imageSubclasses: editingProduct.imageSubclasses || {},
         description: editingProduct.description,
         sizes: editingProduct.sizes.join(', '),
         badge: editingProduct.badge || 'NOVO',
@@ -167,10 +169,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   // Remove single image from array
   const handleRemoveImage = (idx: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== idx)
-    }));
+    setFormData((prev) => {
+      const newImages = prev.images.filter((_, i) => i !== idx);
+      // Re-index subclasses after removing an image
+      const newSubclasses: Record<number, string> = {};
+      let newIdx = 0;
+      for (let i = 0; i < prev.images.length; i++) {
+        if (i === idx) continue;
+        if (prev.imageSubclasses[i]) {
+          newSubclasses[newIdx] = prev.imageSubclasses[i];
+        }
+        newIdx++;
+      }
+      return { ...prev, images: newImages, imageSubclasses: newSubclasses };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -186,6 +198,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const discountNum = formData.discountPercent ? parseInt(formData.discountPercent, 10) : undefined;
     const sizesArray = formData.sizes.split(',').map((s) => s.trim()).filter(Boolean);
 
+    // Clean subclasses: remove empty entries
+    const cleanedSubclasses: Record<number, string> = {};
+    Object.entries(formData.imageSubclasses).forEach(([key, val]) => {
+      if (val && val.trim()) {
+        cleanedSubclasses[Number(key)] = val.trim();
+      }
+    });
+
     if (editingProduct) {
       onUpdateProduct({
         ...editingProduct,
@@ -195,6 +215,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         originalPrice: origPriceNum,
         discountPercent: discountNum,
         images: formData.images,
+        imageSubclasses: Object.keys(cleanedSubclasses).length > 0 ? cleanedSubclasses : undefined,
         description: formData.description,
         sizes: sizesArray,
         badge: formData.badge as any,
@@ -209,6 +230,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         originalPrice: origPriceNum,
         discountPercent: discountNum,
         images: formData.images,
+        imageSubclasses: Object.keys(cleanedSubclasses).length > 0 ? cleanedSubclasses : undefined,
         description: formData.description,
         sizes: sizesArray,
         badge: formData.badge as any,
@@ -234,6 +256,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       originalPrice: '',
       discountPercent: '',
       images: [],
+      imageSubclasses: {},
       description: '',
       sizes: 'P, M, G, GG',
       badge: 'NOVO',
@@ -508,25 +531,42 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       {formData.images.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
                           {formData.images.map((imgUrl, idx) => (
-                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700/80 aspect-square bg-zinc-950 shadow-md">
-                              <img
-                                src={imgUrl}
-                                alt={`Foto ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveImage(idx)}
-                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                title="Remover foto"
-                              >
-                                ✕
-                              </button>
-                              <span className={`absolute bottom-1.5 left-1.5 text-[9px] font-black px-2 py-0.5 rounded-md shadow ${
-                                idx === 0 ? 'bg-yellow-400 text-black' : 'bg-black/80 text-white'
-                              }`}>
-                                {idx === 0 ? 'CAPA' : `#${idx + 1}`}
-                              </span>
+                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700/80 bg-zinc-950 shadow-md flex flex-col">
+                              <div className="relative aspect-square">
+                                <img
+                                  src={imgUrl}
+                                  alt={`Foto ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveImage(idx)}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                  title="Remover foto"
+                                >
+                                  ✕
+                                </button>
+                                <span className={`absolute bottom-1.5 left-1.5 text-[9px] font-black px-2 py-0.5 rounded-md shadow ${
+                                  idx === 0 ? 'bg-yellow-400 text-black' : 'bg-black/80 text-white'
+                                }`}>
+                                  {idx === 0 ? 'CAPA' : `#${idx + 1}`}
+                                </span>
+                              </div>
+                              {/* Subclass / Color Input */}
+                              <div className="p-1.5">
+                                <input
+                                  type="text"
+                                  placeholder="Cor... (ex: Verde)"
+                                  value={formData.imageSubclasses[idx] || ''}
+                                  onChange={(e) => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      imageSubclasses: { ...prev.imageSubclasses, [idx]: e.target.value }
+                                    }));
+                                  }}
+                                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-lg px-2 py-1 text-[10px] text-white placeholder-zinc-500 focus:border-yellow-400 focus:outline-none transition-colors"
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>

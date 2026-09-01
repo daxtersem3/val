@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product } from '../types';
 import { ShoppingCart, Eye, Edit, Trash2, Check, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -12,6 +12,35 @@ interface ProductCardProps {
   onDeleteProduct?: (id: string) => void;
 }
 
+// Categories that require size selection (clothing/shoes)
+const CATEGORIES_WITH_SIZES = ['camisetas', 'tenis', 'conjuntos'];
+
+// Map of color names (Portuguese, lowercase) → hex codes for visual dots
+const COLOR_HEX_MAP: Record<string, string> = {
+  verde: '#22c55e',
+  vermelho: '#ef4444',
+  azul: '#3b82f6',
+  preto: '#18181b',
+  branco: '#f4f4f5',
+  rosa: '#ec4899',
+  amarelo: '#eab308',
+  cinza: '#71717a',
+  marrom: '#92400e',
+  roxo: '#a855f7',
+  laranja: '#f97316',
+  bege: '#d4a574',
+  dourado: '#d4a017',
+  prata: '#c0c0c0',
+  vinho: '#722f37',
+  turquesa: '#40e0d0',
+  coral: '#ff7f50',
+  navy: '#1e3a5f',
+};
+
+function getColorHex(colorName: string): string {
+  return COLOR_HEX_MAP[colorName.toLowerCase().trim()] || '#a1a1aa';
+}
+
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onAddToCart,
@@ -20,10 +49,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onEditProduct,
   onDeleteProduct
 }) => {
+  const needsSize = CATEGORIES_WITH_SIZES.includes(product.category);
   const [selectedSize, setSelectedSize] = useState<string>(
-    product.sizes.length > 0 ? product.sizes[0] : 'Único'
+    needsSize && product.sizes.length > 0 ? product.sizes[0] : 'Único'
   );
   const [addedToast, setAddedToast] = useState(false);
+
+  // Extract unique color names from subclasses for visual dots
+  const availableColors = useMemo(() => {
+    const sub = product.imageSubclasses || {};
+    const colors = new Set<string>();
+    Object.values(sub).forEach((c) => {
+      if (c && c.trim()) colors.add(c.trim());
+    });
+    return Array.from(colors);
+  }, [product.imageSubclasses]);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -138,8 +178,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.description}
           </p>
 
-          {/* Size Selector */}
-          {product.sizes && product.sizes.length > 0 && (
+          {/* Color Indicator Dots — show available subclass colors */}
+          {availableColors.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mr-0.5">Cores:</span>
+              {availableColors.map((color) => (
+                <span
+                  key={color}
+                  title={color}
+                  className="w-4 h-4 rounded-full border-2 border-zinc-700 shadow-sm cursor-default"
+                  style={{ backgroundColor: getColorHex(color) }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Size Selector — only for clothing/shoes categories */}
+          {needsSize && product.sizes && product.sizes.length > 0 && (
             <div className="mt-4">
               <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider block mb-1.5">
                 Tamanho:
