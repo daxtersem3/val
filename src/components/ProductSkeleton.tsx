@@ -3,8 +3,8 @@ import React from 'react';
 export const ProductCardSkeleton: React.FC = () => {
   return (
     <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl overflow-hidden flex flex-col justify-between animate-pulse">
-      {/* Image Skeleton */}
-      <div className="relative h-64 sm:h-72 w-full bg-zinc-800/50 flex items-center justify-center">
+      {/* Image Skeleton - Perfect Square */}
+      <div className="relative aspect-square w-full bg-zinc-800/50 flex items-center justify-center">
         <div className="w-12 h-12 rounded-2xl bg-zinc-700/40" />
         <div className="absolute top-3 left-3 w-20 h-5 rounded-full bg-zinc-700/50" />
       </div>

@@ -51,29 +51,41 @@ export const App: React.FC = () => {
     } catch {
       // ignore
     }
-    // Only fallback to INITIAL_PRODUCTS if Supabase is NOT configured
     return isSupabaseConfigured ? [] : INITIAL_PRODUCTS;
   });
 
-  // If Supabase is configured and we don't have cached products, show skeleton until all 50 load at once
-  const [isLoading, setIsLoading] = useState<boolean>(() => isSupabaseConfigured && products.length === 0);
+  // Initial loading state with minimum aesthetic duration
+  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
 
-  // Background sync with Supabase DB on startup
+  // Load from Supabase DB on startup with clean minimum loading time
   useEffect(() => {
     let isMounted = true;
     async function syncWithDB() {
       if (isSupabaseConfigured) {
-        const dbProducts = await fetchProductsFromDB();
-        if (isMounted && dbProducts !== null) {
-          setProducts(dbProducts);
-          try {
-            localStorage.setItem('lp_importados_products', JSON.stringify(dbProducts));
-          } catch (e) {
-            console.error('Error saving products cache:', e);
+        setIsLoading(true);
+        // Minimum smooth duration (500ms) to ensure full render preparation
+        const minDelay = new Promise((resolve) => setTimeout(resolve, 500));
+
+        try {
+          const [dbProducts] = await Promise.all([
+            fetchProductsFromDB(),
+            minDelay
+          ]);
+
+          if (isMounted && dbProducts !== null && dbProducts.length > 0) {
+            setProducts(dbProducts);
+            try {
+              localStorage.setItem('lp_importados_products', JSON.stringify(dbProducts));
+            } catch (e) {
+              console.error('Error saving products cache:', e);
+            }
           }
-        }
-        if (isMounted) {
-          setIsLoading(false);
+        } catch (err) {
+          console.error('Error loading Supabase products:', err);
+        } finally {
+          if (isMounted) {
+            setIsLoading(false);
+          }
         }
       } else {
         setIsLoading(false);
