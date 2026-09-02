@@ -40,7 +40,7 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Products State & Instant Initial Load (Stale-While-Revalidate)
+  // Products State & Initial Load
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem('lp_importados_products');
@@ -51,13 +51,14 @@ export const App: React.FC = () => {
     } catch {
       // ignore
     }
-    return INITIAL_PRODUCTS;
+    // Only fallback to INITIAL_PRODUCTS if Supabase is NOT configured
+    return isSupabaseConfigured ? [] : INITIAL_PRODUCTS;
   });
 
-  // Loading only active if we have absolutely no products to display
-  const [isLoading, setIsLoading] = useState<boolean>(() => products.length === 0 && isSupabaseConfigured);
+  // If Supabase is configured and we don't have cached products, show skeleton until all 50 load at once
+  const [isLoading, setIsLoading] = useState<boolean>(() => isSupabaseConfigured && products.length === 0);
 
-  // Background sync with Supabase DB on startup (non-blocking)
+  // Background sync with Supabase DB on startup
   useEffect(() => {
     let isMounted = true;
     async function syncWithDB() {
