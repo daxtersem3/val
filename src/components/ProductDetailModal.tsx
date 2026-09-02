@@ -143,7 +143,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </button>
 
           {/* Left Side: Image Gallery with Swipe */}
-          <div className="w-full md:w-1/2 relative bg-zinc-950 h-72 md:h-auto min-h-[300px] overflow-hidden flex items-center justify-center p-2">
+          <div className="w-full md:w-1/2 relative bg-zinc-950 aspect-square md:aspect-auto md:min-h-[420px] overflow-hidden">
             <AnimatePresence initial={false} custom={swipeDirection} mode="popLayout">
               <motion.img
                 key={`img-${currentImageIdx}-${selectedColor}`}
@@ -159,7 +159,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 onDragEnd={handleDragEnd}
                 src={filteredImages[currentImageIdx]}
                 alt={`${product.name} - Foto ${currentImageIdx + 1}`}
-                className="w-full h-full object-contain cursor-grab active:cursor-grabbing"
+                className="absolute inset-0 w-full h-full object-cover cursor-grab active:cursor-grabbing"
               />
             </AnimatePresence>
 

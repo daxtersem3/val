@@ -610,7 +610,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                 <img
                                   src={imgUrl}
                                   alt={`Foto ${idx + 1}`}
-                                  className="w-full h-full object-contain p-1"
+                                  className="w-full h-full object-cover"
                                 />
                                 <button
                                   type="button"
@@ -801,13 +801,13 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <img 
                                 src={prod.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'} 
                                 alt={prod.name} 
-                                className="w-14 h-14 rounded-xl object-contain bg-zinc-950 p-0.5 shrink-0 border border-zinc-800" 
+                                className="w-14 h-14 rounded-xl object-cover shrink-0 border border-zinc-800" 
                               />
                               {/* Small thumbnails for extra images */}
                               {prod.images && prod.images.length > 1 && (
                                 <div className="flex gap-1 shrink-0">
                                   {prod.images.slice(1, 3).map((img, idx) => (
-                                    <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-contain bg-zinc-950 p-0.5 border border-zinc-700 opacity-60" />
+                                    <img key={idx} src={img} alt="" className="w-7 h-7 rounded-lg object-cover border border-zinc-700 opacity-60" />
                                   ))}
                                   {prod.images.length > 3 && (
                                     <span className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-400">
@@ -874,7 +874,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   {photoManagerImages.map((imgUrl, idx) => (
                                     <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-700/80 bg-zinc-900 shadow-md flex flex-col">
                                       <div className="relative aspect-square">
-                                        <img src={imgUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-contain p-1" />
+                                        <img src={imgUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
                                         <button
                                           type="button"
                                           onClick={() => pmRemoveImage(idx)}
