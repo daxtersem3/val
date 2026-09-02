@@ -6,7 +6,7 @@ import { X, ShoppingCart, Check, ShieldCheck, Truck, RefreshCw, ChevronLeft, Che
 interface ProductDetailModalProps {
   product: Product | null;
   onClose: () => void;
-  onAddToCart: (product: Product, size: string, qty: number) => void;
+  onAddToCart: (product: Product, size: string, color?: string, qty?: number) => void;
 }
 
 // Categories that require size selection (clothing/shoes)
@@ -54,8 +54,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     Object.values(subclasses).forEach((c) => {
       if (c && c.trim()) colors.add(c.trim());
     });
+    // Also include colors that might have sizes defined in colorSizes
+    if (product.colorSizes) {
+      Object.keys(product.colorSizes).forEach((c) => {
+        if (c && c.trim()) colors.add(c.trim());
+      });
+    }
     return Array.from(colors);
-  }, [subclasses]);
+  }, [subclasses, product.colorSizes]);
 
   const hasSubclasses = availableColors.length > 0;
 
@@ -73,21 +79,58 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const needsSize = CATEGORIES_WITH_SIZES.includes(product.category);
-  const [selectedSize, setSelectedSize] = useState<string>(
-    needsSize && product.sizes.length > 0 ? product.sizes[0] : 'Único'
-  );
+
+  // Dynamic sizes based on selected color or fallback to general sizes
+  const currentSizes = useMemo(() => {
+    if (!needsSize) return [];
+    const colorSizesMap = product.colorSizes;
+    
+    if (colorSizesMap && Object.keys(colorSizesMap).length > 0) {
+      if (selectedColor && colorSizesMap[selectedColor] && colorSizesMap[selectedColor].length > 0) {
+        return colorSizesMap[selectedColor];
+      }
+      if (!selectedColor) {
+        const allColorSizes = new Set<string>();
+        Object.values(colorSizesMap).forEach((sizesArr) => {
+          if (Array.isArray(sizesArr)) {
+            sizesArr.forEach((s) => allColorSizes.add(s));
+          }
+        });
+        if (allColorSizes.size > 0) {
+          return Array.from(allColorSizes);
+        }
+      }
+    }
+    return product.sizes || [];
+  }, [product.colorSizes, product.sizes, selectedColor, needsSize]);
+
+  const [selectedSize, setSelectedSize] = useState<string>(() => {
+    if (!needsSize) return 'Único';
+    return currentSizes.length > 0 ? currentSizes[0] : (product.sizes?.[0] || 'Único');
+  });
+
+  // Auto-sync selectedSize when available sizes for color change
+  React.useEffect(() => {
+    if (needsSize && currentSizes.length > 0) {
+      if (!currentSizes.includes(selectedSize)) {
+        setSelectedSize(currentSizes[0]);
+      }
+    }
+  }, [currentSizes, needsSize, selectedSize]);
+
   const [quantity, setQuantity] = useState<number>(1);
   const [added, setAdded] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
 
-  // Reset currentImageIdx when color filter changes
+  // Reset currentImageIdx and sync color selection
   const handleColorSelect = (color: string | null) => {
     setSelectedColor(color);
     setCurrentImageIdx(0);
   };
 
   const handleAdd = () => {
-    onAddToCart(product, selectedSize, quantity);
+    const colorToPass = selectedColor || (availableColors.length === 1 ? availableColors[0] : undefined);
+    onAddToCart(product, selectedSize, colorToPass, quantity);
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
@@ -292,27 +335,41 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.description}
               </p>
 
-              {/* Sizes Selection — only for clothing/shoes categories */}
-              {needsSize && product.sizes && product.sizes.length > 0 && (
+              {/* Sizes Selection — dynamic according to selected color */}
+              {needsSize && (
                 <div className="mt-6">
-                  <label className="text-xs font-black text-zinc-400 uppercase tracking-wider block mb-2">
-                    Selecione o Tamanho:
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((sz) => (
-                      <button
-                        key={sz}
-                        onClick={() => setSelectedSize(sz)}
-                        className={`px-4 py-2 text-xs font-black rounded-xl border transition-all ${
-                          selectedSize === sz
-                            ? 'bg-yellow-400 border-yellow-400 text-black shadow-lg scale-105'
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
-                        }`}
-                      >
-                        {sz}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">
+                      Selecione o Tamanho:
+                    </label>
+                    {selectedColor && product.colorSizes?.[selectedColor] && (
+                      <span className="text-[10px] text-yellow-400 font-bold">
+                        {currentSizes.length} tamanho{currentSizes.length !== 1 ? 's' : ''} em {selectedColor}
+                      </span>
+                    )}
                   </div>
+
+                  {currentSizes.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {currentSizes.map((sz) => (
+                        <button
+                          key={sz}
+                          onClick={() => setSelectedSize(sz)}
+                          className={`px-4 py-2 text-xs font-black rounded-xl border transition-all ${
+                            selectedSize === sz
+                              ? 'bg-yellow-400 border-yellow-400 text-black shadow-lg scale-105'
+                              : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-red-950/40 border border-red-800/60 rounded-xl text-xs text-red-300">
+                      Sem tamanhos disponíveis para esta cor no momento.
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -42,7 +42,17 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'
     ],
-    description: 'Tênis em couro legítimo premium, combinação icônica de Amarelo e Preto. Acompanha cadarços extras e caixa original.',
+    imageSubclasses: {
+      0: 'Amarelo',
+      1: 'Preto',
+      2: 'Vermelho'
+    },
+    colorSizes: {
+      'Amarelo': ['39', '40', '41', '42'],
+      'Preto': ['40', '41', '42', '43'],
+      'Vermelho': ['38', '43']
+    },
+    description: 'Tênis em couro legítimo premium, combinação icônica de cores exclusivas. Acompanha cadarços extras e caixa original.',
     sizes: ['38', '39', '40', '41', '42', '43'],
     colors: ['Amarelo/Preto'],
     featured: true,

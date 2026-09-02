@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product, size: string) => void;
+  onAddToCart: (product: Product, size: string, color?: string) => void;
   onQuickView: (product: Product) => void;
   isAdmin?: boolean;
   onEditProduct?: (product: Product) => void;
@@ -67,7 +67,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onAddToCart(product, selectedSize);
+    if (availableColors.length > 1 || (product.colorSizes && Object.keys(product.colorSizes).length > 0)) {
+      onQuickView(product);
+      return;
+    }
+    const defaultColor = availableColors.length === 1 ? availableColors[0] : undefined;
+    onAddToCart(product, selectedSize, defaultColor);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 1800);
   };

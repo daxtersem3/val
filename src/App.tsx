@@ -119,9 +119,10 @@ export const App: React.FC = () => {
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
   // Cart Actions
-  const handleAddToCart = (product: Product, size: string, qty: number = 1) => {
+  const handleAddToCart = (product: Product, size: string, color?: string, qty: number = 1) => {
     setCart((prev) => {
-      const cartId = `${product.id}-${size}`;
+      const colorKey = color ? color.trim().toLowerCase() : 'default';
+      const cartId = `${product.id}-${colorKey}-${size}`;
       const existing = prev.find((item) => item.cartId === cartId);
       if (existing) {
         return prev.map((item) =>
@@ -130,7 +131,7 @@ export const App: React.FC = () => {
             : item
         );
       }
-      return [...prev, { cartId, product, selectedSize: size, quantity: qty }];
+      return [...prev, { cartId, product, selectedSize: size, selectedColor: color, quantity: qty }];
     });
   };
 

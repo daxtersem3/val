@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -6,6 +6,32 @@ import {
   Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles, Camera
 } from 'lucide-react';
 import { uploadProductImage, isSupabaseConfigured, supabase } from '../lib/supabase';
+
+// Map of color names (Portuguese, lowercase) → hex codes
+const COLOR_HEX_MAP: Record<string, string> = {
+  verde: '#22c55e',
+  vermelho: '#ef4444',
+  azul: '#3b82f6',
+  preto: '#18181b',
+  branco: '#f4f4f5',
+  rosa: '#ec4899',
+  amarelo: '#eab308',
+  cinza: '#71717a',
+  marrom: '#92400e',
+  roxo: '#a855f7',
+  laranja: '#f97316',
+  bege: '#d4a574',
+  dourado: '#d4a017',
+  prata: '#c0c0c0',
+  vinho: '#722f37',
+  turquesa: '#40e0d0',
+  coral: '#ff7f50',
+  navy: '#1e3a5f',
+};
+
+function getColorHex(colorName: string): string {
+  return COLOR_HEX_MAP[colorName.toLowerCase().trim()] || '#a1a1aa';
+}
 
 interface AdminPanelModalProps {
   isOpen: boolean;
@@ -118,6 +144,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     discountPercent: '',
     images: [] as string[],
     imageSubclasses: {} as Record<number, string>,
+    colorSizes: {} as Record<string, string>,
     description: '',
     sizes: 'P, M, G, GG',
     badge: 'NOVO',
@@ -128,6 +155,15 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   // Sync form when editingProduct changes
   useEffect(() => {
     if (editingProduct) {
+      const mappedColorSizes: Record<string, string> = {};
+      if (editingProduct.colorSizes) {
+        Object.entries(editingProduct.colorSizes).forEach(([c, sArr]) => {
+          if (Array.isArray(sArr)) {
+            mappedColorSizes[c] = sArr.join(', ');
+          }
+        });
+      }
+
       setFormData({
         name: editingProduct.name,
         category: editingProduct.category,
@@ -136,6 +172,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         discountPercent: editingProduct.discountPercent ? editingProduct.discountPercent.toString() : '',
         images: editingProduct.images || [],
         imageSubclasses: editingProduct.imageSubclasses || {},
+        colorSizes: mappedColorSizes,
         description: editingProduct.description,
         sizes: editingProduct.sizes.join(', '),
         badge: editingProduct.badge || 'NOVO',
@@ -214,6 +251,18 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       }
     });
 
+    // Clean colorSizes: convert comma-separated string to string[]
+    const cleanedColorSizes: Record<string, string[]> = {};
+    Object.entries(formData.colorSizes).forEach(([colorName, sizeStr]) => {
+      const trimmedColor = colorName.trim();
+      if (trimmedColor && sizeStr && sizeStr.trim()) {
+        const arr = sizeStr.split(',').map((s) => s.trim()).filter(Boolean);
+        if (arr.length > 0) {
+          cleanedColorSizes[trimmedColor] = arr;
+        }
+      }
+    });
+
     if (editingProduct) {
       onUpdateProduct({
         ...editingProduct,
@@ -224,6 +273,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         discountPercent: discountNum,
         images: formData.images,
         imageSubclasses: Object.keys(cleanedSubclasses).length > 0 ? cleanedSubclasses : undefined,
+        colorSizes: Object.keys(cleanedColorSizes).length > 0 ? cleanedColorSizes : undefined,
         description: formData.description,
         sizes: sizesArray,
         badge: formData.badge as any,
@@ -239,6 +289,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         discountPercent: discountNum,
         images: formData.images,
         imageSubclasses: Object.keys(cleanedSubclasses).length > 0 ? cleanedSubclasses : undefined,
+        colorSizes: Object.keys(cleanedColorSizes).length > 0 ? cleanedColorSizes : undefined,
         description: formData.description,
         sizes: sizesArray,
         badge: formData.badge as any,
@@ -265,6 +316,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       discountPercent: '',
       images: [],
       imageSubclasses: {},
+      colorSizes: {},
       description: '',
       sizes: 'P, M, G, GG',
       badge: 'NOVO',
@@ -699,13 +751,73 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       </div>
 
                       <p className="text-[10px] text-zinc-400">
-                        💡 A primeira foto será a capa principal. Pode selecionar várias fotos ao mesmo tempo.
+                        💡 A primeira foto será a capa principal. Digite a cor em cada foto para ativar o filtro de fotos e tamanhos por cor.
                       </p>
                     </div>
 
+                    {/* ======================================================== */}
+                    {/* SIZES BY COLOR / SUBCLASS (DYNAMIC VARIANT STOCK)       */}
+                    {/* ======================================================== */}
+                    {(() => {
+                      const definedColors = Array.from(
+                        new Set(
+                          Object.values(formData.imageSubclasses)
+                            .map((c) => c?.trim())
+                            .filter(Boolean) as string[]
+                        )
+                      );
+
+                      if (definedColors.length === 0) return null;
+
+                      return (
+                        <div className="bg-zinc-950/90 border border-yellow-400/40 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <label className="text-xs font-black text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <Sparkles className="w-4 h-4" />
+                              Tamanhos Específicos por Cor / Subclasse ({definedColors.length} cores)
+                            </label>
+                            <span className="text-[10px] text-zinc-400">Ex: Vermelho: 43 | Verde: 38</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 leading-relaxed">
+                            Defina os tamanhos existentes para cada cor. Quando o cliente tocar na cor, verá apenas os tamanhos que você indicar aqui.
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            {definedColors.map((colorName) => (
+                              <div key={colorName} className="bg-zinc-900/90 border border-zinc-750 rounded-xl p-3 space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0"
+                                    style={{ backgroundColor: getColorHex(colorName) }}
+                                  />
+                                  <span className="text-xs font-black text-white">{colorName}</span>
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder={`Tamanhos em ${colorName}... (ex: 38, 39, 43)`}
+                                  value={formData.colorSizes[colorName] || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      colorSizes: {
+                                        ...prev.colorSizes,
+                                        [colorName]: val
+                                      }
+                                    }));
+                                  }}
+                                  className="w-full bg-zinc-950 border border-zinc-700/80 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-yellow-400 focus:outline-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div>
                       <label className="text-xs font-black text-zinc-300 uppercase tracking-wider block mb-1">
-                        Tamanhos Disponíveis (Separados por vírgula)
+                        Tamanhos Gerais (Padrão para o produto)
                       </label>
                       <input
                         type="text"
@@ -714,6 +826,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-yellow-400 focus:outline-none"
                       />
+                      <span className="text-[10px] text-zinc-500 mt-1 block">
+                        Usado como base ou caso alguma foto não tenha cor específica informada.
+                      </span>
                     </div>
 
                     <div>

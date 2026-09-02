@@ -7,6 +7,7 @@ export interface Product {
   discountPercent?: number;
   images: string[];
   imageSubclasses?: Record<number, string>; // mapa: índice da imagem → nome da cor/subclasse
+  colorSizes?: Record<string, string[]>; // mapa: nome da cor → lista de tamanhos disponíveis
   description: string;
   sizes: string[];
   colors?: string[];

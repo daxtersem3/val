@@ -7,7 +7,7 @@ import { PackageSearch } from 'lucide-react';
 interface ProductGridProps {
   products: Product[];
   isLoading?: boolean;
-  onAddToCart: (product: Product, size: string) => void;
+  onAddToCart: (product: Product, size: string, color?: string) => void;
   onQuickView: (product: Product) => void;
   isAdmin?: boolean;
   onEditProduct?: (product: Product) => void;

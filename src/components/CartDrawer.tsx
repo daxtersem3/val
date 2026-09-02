@@ -54,10 +54,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     let itemsList = '';
     cartItems.forEach((item, index) => {
       const itemTotal = (item.product.price * item.quantity).toFixed(2).replace('.', ',');
+      const colorLine = item.selectedColor ? `\n   • Cor: ${item.selectedColor}` : '';
       const sizeLine = CATEGORIES_WITH_SIZES.includes(item.product.category)
         ? `\n   • Tamanho: ${item.selectedSize}`
         : '';
-      itemsList += `\n${index + 1}. *${item.product.name}*${sizeLine}\n   • Quantidade: ${item.quantity}x\n   • Valor: R$ ${itemTotal}\n`;
+      itemsList += `\n${index + 1}. *${item.product.name}*${colorLine}${sizeLine}\n   • Quantidade: ${item.quantity}x\n   • Valor: R$ ${itemTotal}\n`;
     });
 
     const formattedTotal = totalAmount.toFixed(2).replace('.', ',');
@@ -129,28 +130,43 @@ Aguardando confirmação e chave PIX para envio!`;
               </div>
             ) : step === 'cart' ? (
               /* Step 1: Items List */
-              cartItems.map((item) => (
-                <div
-                  key={item.cartId}
-                  className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex gap-4 items-center justify-between"
-                >
-                  <img
-                    src={item.product.images?.[0]}
-                    alt={item.product.name}
-                    className="w-16 h-16 rounded-xl object-cover border border-zinc-700/60"
-                  />
+              cartItems.map((item) => {
+                const imageForColor = item.selectedColor && item.product.imageSubclasses
+                  ? Object.entries(item.product.imageSubclasses).find(
+                      ([_, col]) => col.toLowerCase().trim() === item.selectedColor?.toLowerCase().trim()
+                    )
+                  : null;
+                const itemImg = (imageForColor && item.product.images[Number(imageForColor[0])]) || item.product.images?.[0];
 
-                  <div className="flex-1">
-                    <h4 className="text-xs font-bold text-white line-clamp-1">{item.product.name}</h4>
-                    {['camisetas', 'tenis', 'conjuntos'].includes(item.product.category) && (
-                      <span className="inline-block mt-1 text-[10px] font-extrabold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded-md">
-                        Tamanho: {item.selectedSize}
-                      </span>
-                    )}
-                    <div className="text-sm font-black text-yellow-400 mt-1">
-                      R$ {(item.product.price * item.quantity).toFixed(2).replace('.', ',')}
-                    </div>
-                  </div>
+                return (
+                  <div
+                    key={item.cartId}
+                    className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl flex gap-4 items-center justify-between"
+                  >
+                      <img
+                        src={itemImg}
+                        alt={item.product.name}
+                        className="w-16 h-16 rounded-xl object-cover border border-zinc-700/60"
+                      />
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-white line-clamp-1">{item.product.name}</h4>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {item.selectedColor && (
+                            <span className="text-[10px] font-extrabold bg-zinc-800 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded-md">
+                              Cor: {item.selectedColor}
+                            </span>
+                          )}
+                          {['camisetas', 'tenis', 'conjuntos'].includes(item.product.category) && (
+                            <span className="text-[10px] font-extrabold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded-md">
+                              Tam: {item.selectedSize}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm font-black text-yellow-400 mt-1">
+                          R$ {(item.product.price * item.quantity).toFixed(2).replace('.', ',')}
+                        </div>
+                      </div>
 
                   {/* Quantity & Delete */}
                   <div className="flex flex-col items-end gap-2">
@@ -179,7 +195,8 @@ Aguardando confirmação e chave PIX para envio!`;
                     </div>
                   </div>
                 </div>
-              ))
+              );
+            })
             ) : (
               /* Step 2: Customer Details Form */
               <form id="checkout-form" onSubmit={handleSendWhatsApp} className="space-y-4">

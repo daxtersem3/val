@@ -10,7 +10,7 @@ interface CatalogPageProps {
   products: Product[];
   categories: Category[];
   isLoading?: boolean;
-  onAddToCart: (product: Product, size: string) => void;
+  onAddToCart: (product: Product, size: string, color?: string) => void;
   onQuickView: (product: Product) => void;
   onGoBack: () => void;
   isAdmin?: boolean;
