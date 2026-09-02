@@ -96,14 +96,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Top Image Container */}
       <div 
         onClick={() => onQuickView(product)}
-        className="relative h-64 sm:h-72 w-full overflow-hidden bg-zinc-950 cursor-pointer"
+        className="relative h-64 sm:h-72 w-full overflow-hidden bg-zinc-950 cursor-pointer flex items-center justify-center p-2"
       >
         <img
           src={product.images?.[0] || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80'}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Badge & Discount */}
         <div className="absolute top-3 left-3 flex flex-col gap-1 z-10 items-start">

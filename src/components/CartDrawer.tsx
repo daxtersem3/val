@@ -137,7 +137,7 @@ Aguardando confirmação e chave PIX para envio!`;
                   <img
                     src={item.product.images?.[0]}
                     alt={item.product.name}
-                    className="w-16 h-16 rounded-xl object-cover border border-zinc-700/60"
+                    className="w-16 h-16 rounded-xl object-contain bg-zinc-950 p-1 border border-zinc-700/60"
                   />
 
                   <div className="flex-1">

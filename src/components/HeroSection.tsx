@@ -187,7 +187,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {/* Product Hero Image Carousel */}
                 <div 
                   onClick={() => onSelectProduct?.(currentItem)}
-                  className="relative h-72 rounded-2xl overflow-hidden bg-black mb-4 cursor-pointer"
+                  className="relative h-72 rounded-2xl overflow-hidden bg-black mb-4 cursor-pointer flex items-center justify-center p-2"
                 >
                   <AnimatePresence mode="wait">
                     <motion.img
@@ -198,11 +198,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       transition={{ duration: 0.4 }}
                       src={currentItem.images?.[0] || ''}
                       alt={currentItem.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                     />
                   </AnimatePresence>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                   
                   {/* Badge */}
                   <span className="absolute top-3 left-3 bg-yellow-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
