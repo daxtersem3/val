@@ -40,53 +40,57 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Products State & Initial Load
-  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
+  // Products State & Instant Initial Load (Stale-While-Revalidate)
   const [products, setProducts] = useState<Product[]>(() => {
-    if (isSupabaseConfigured) {
-      // Avoid flashing dummy/deleted products on start when connected to Supabase
-      return [];
-    }
     try {
       const saved = localStorage.getItem('lp_importados_products');
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch {
-      return INITIAL_PRODUCTS;
+      // ignore
     }
+    return INITIAL_PRODUCTS;
   });
 
-  // Load from Supabase DB on startup if configured
+  // Loading only active if we have absolutely no products to display
+  const [isLoading, setIsLoading] = useState<boolean>(() => products.length === 0 && isSupabaseConfigured);
+
+  // Background sync with Supabase DB on startup (non-blocking)
   useEffect(() => {
     let isMounted = true;
-    async function loadDB() {
+    async function syncWithDB() {
       if (isSupabaseConfigured) {
-        setIsLoading(true);
         const dbProducts = await fetchProductsFromDB();
-        if (isMounted) {
-          if (dbProducts !== null) {
-            setProducts(dbProducts);
+        if (isMounted && dbProducts !== null) {
+          setProducts(dbProducts);
+          try {
+            localStorage.setItem('lp_importados_products', JSON.stringify(dbProducts));
+          } catch (e) {
+            console.error('Error saving products cache:', e);
           }
+        }
+        if (isMounted) {
           setIsLoading(false);
         }
       } else {
         setIsLoading(false);
       }
     }
-    loadDB();
+    syncWithDB();
     return () => {
       isMounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
-      try {
-        localStorage.setItem('lp_importados_products', JSON.stringify(products));
-      } catch (e) {
-        console.error('Error saving products:', e);
-      }
+    try {
+      localStorage.setItem('lp_importados_products', JSON.stringify(products));
+    } catch (e) {
+      console.error('Error saving products:', e);
     }
-  }, [products, isLoading]);
+  }, [products]);
 
   // Cart State with localStorage persistence
   const [cart, setCart] = useState<CartItem[]>(() => {
