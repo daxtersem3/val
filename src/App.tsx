@@ -180,15 +180,31 @@ export const App: React.FC = () => {
       ...newProd,
       id: `prod-${Date.now()}`
     };
-    setProducts((prev) => [created, ...prev]);
-    saveProductToDB(created);
+    setProducts((prev) => {
+      const next = [created, ...prev];
+      try { localStorage.setItem('lp_importados_products', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    try {
+      const ok = await saveProductToDB(created);
+      if (!ok) console.warn('[LP] Falha ao salvar produto no Supabase (add):', created.id);
+    } catch (err) {
+      console.error('[LP] Erro ao salvar produto no Supabase (add):', err);
+    }
   };
 
   const handleUpdateProduct = async (updated: Product) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p))
-    );
-    saveProductToDB(updated);
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === updated.id ? updated : p));
+      try { localStorage.setItem('lp_importados_products', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    try {
+      const ok = await saveProductToDB(updated);
+      if (!ok) console.warn('[LP] Falha ao salvar produto no Supabase (update):', updated.id);
+    } catch (err) {
+      console.error('[LP] Erro ao salvar produto no Supabase (update):', err);
+    }
   };
 
   const handleDeleteProduct = async (id: string) => {

@@ -62,30 +62,36 @@ export async function saveProductToDB(product: Product): Promise<boolean> {
   if (!supabase) return false;
 
   try {
-    const { error } = await supabase.from('products').upsert({
+    const payload = {
       id: product.id,
       name: product.name,
       category: product.category,
       price: product.price,
-      original_price: product.originalPrice,
-      discount_percent: product.discountPercent,
-      images: product.images,
+      original_price: product.originalPrice ?? null,
+      discount_percent: product.discountPercent ?? null,
+      images: product.images || [],
       image_subclasses: product.imageSubclasses || {},
       color_sizes: product.colorSizes || {},
-      description: product.description,
-      sizes: product.sizes,
-      badge: product.badge,
-      featured: product.featured,
-      in_stock: product.inStock
-    });
+      description: product.description || '',
+      sizes: product.sizes || [],
+      badge: product.badge ?? null,
+      featured: product.featured ?? false,
+      in_stock: product.inStock ?? true
+    };
+
+    const { error } = await supabase
+      .from('products')
+      .upsert(payload, { onConflict: 'id' });
 
     if (error) {
-      console.error('Supabase insert error:', error);
+      console.error('[LP] Supabase upsert error:', error.message, error.details, error.hint);
+      console.error('[LP] Payload que falhou:', JSON.stringify(payload, null, 2));
       return false;
     }
+    console.log('[LP] Produto salvo no Supabase com sucesso:', product.id, '| imagens:', product.images?.length);
     return true;
   } catch (err) {
-    console.error('Supabase save error:', err);
+    console.error('[LP] Supabase save exception:', err);
     return false;
   }
 }

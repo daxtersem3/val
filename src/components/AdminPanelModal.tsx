@@ -382,16 +382,31 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   const pmSave = () => {
     const prod = products.find(p => p.id === photoManagerId);
-    if (!prod) return;
+    if (!prod) {
+      console.warn('[LP] pmSave: produto não encontrado com id:', photoManagerId);
+      return;
+    }
+
+    if (photoManagerImages.length === 0) {
+      alert('Adicione pelo menos uma foto antes de salvar.');
+      return;
+    }
+
     const cleanSub: Record<number, string> = {};
     Object.entries(photoManagerSubclasses).forEach(([k, v]) => {
       if (v && v.trim()) cleanSub[Number(k)] = v.trim();
     });
-    onUpdateProduct({
+
+    // Build the full updated product with all fields preserved
+    const updatedProduct: Product = {
       ...prod,
-      images: photoManagerImages,
+      images: [...photoManagerImages],
       imageSubclasses: Object.keys(cleanSub).length > 0 ? cleanSub : undefined,
-    });
+    };
+
+    console.log('[LP] pmSave: atualizando produto', updatedProduct.id, 'com', updatedProduct.images.length, 'fotos');
+    onUpdateProduct(updatedProduct);
+
     setPhotoManagerSaved(true);
     setTimeout(() => setPhotoManagerSaved(false), 1500);
   };
