@@ -19,8 +19,12 @@ create table if not exists public.products (
   featured boolean default false,
   in_stock boolean default true,
   image_subclasses jsonb default '{}',
+  color_sizes jsonb default '{}',
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- 1b. Add color_sizes column if missing (for existing installations)
+alter table public.products add column if not exists color_sizes jsonb default '{}';
 
 -- 2. Habilitar segurança em nível de linha (RLS)
 alter table public.products enable row level security;

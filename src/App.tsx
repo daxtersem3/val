@@ -186,10 +186,21 @@ export const App: React.FC = () => {
       return next;
     });
     try {
-      const ok = await saveProductToDB(created);
-      if (!ok) console.warn('[LP] Falha ao salvar produto no Supabase (add):', created.id);
-    } catch (err) {
+      const result = await saveProductToDB(created);
+      if (!result.ok) {
+        console.error('[LP] Falha ao salvar produto no Supabase (add):', result.error);
+        alert(
+          `⚠️ ATENÇÃO: O produto "${created.name}" aparece na tela mas NÃO foi salvo na nuvem!\n\n` +
+          `Motivo: ${result.error}\n\n` +
+          `As fotos e dados vão desaparecer ao recarregar a página. Corrija o problema e tente salvar novamente.`
+        );
+      }
+    } catch (err: any) {
       console.error('[LP] Erro ao salvar produto no Supabase (add):', err);
+      alert(
+        `⚠️ Erro ao salvar "${created.name}" na nuvem: ${err?.message || 'erro desconhecido'}\n\n` +
+        `O produto aparece localmente mas pode desaparecer ao recarregar.`
+      );
     }
   };
 
@@ -200,10 +211,21 @@ export const App: React.FC = () => {
       return next;
     });
     try {
-      const ok = await saveProductToDB(updated);
-      if (!ok) console.warn('[LP] Falha ao salvar produto no Supabase (update):', updated.id);
-    } catch (err) {
+      const result = await saveProductToDB(updated);
+      if (!result.ok) {
+        console.error('[LP] Falha ao salvar produto no Supabase (update):', result.error);
+        alert(
+          `⚠️ ATENÇÃO: As alterações em "${updated.name}" NÃO foram salvas na nuvem!\n\n` +
+          `Motivo: ${result.error}\n\n` +
+          `As mudanças vão desaparecer ao recarregar a página. Corrija o problema e tente salvar novamente.`
+        );
+      }
+    } catch (err: any) {
       console.error('[LP] Erro ao salvar produto no Supabase (update):', err);
+      alert(
+        `⚠️ Erro ao atualizar "${updated.name}" na nuvem: ${err?.message || 'erro desconhecido'}\n\n` +
+        `As alterações aparecem localmente mas podem desaparecer ao recarregar.`
+      );
     }
   };
 

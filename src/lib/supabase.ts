@@ -56,13 +56,15 @@ export async function fetchProductsFromDB(): Promise<Product[] | null> {
 }
 
 /**
- * Save / Insert product to Supabase
+ * Save / Insert product to Supabase.
+ * Returns { ok: true } on success, or { ok: false, error: string } with a descriptive message on failure.
+ * If the first attempt fails (e.g. missing column), retries without optional fields like color_sizes.
  */
-export async function saveProductToDB(product: Product): Promise<boolean> {
-  if (!supabase) return false;
+export async function saveProductToDB(product: Product): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: 'Supabase não está configurado.' };
 
   try {
-    const payload = {
+    const payload: Record<string, any> = {
       id: product.id,
       name: product.name,
       category: product.category,
@@ -79,20 +81,53 @@ export async function saveProductToDB(product: Product): Promise<boolean> {
       in_stock: product.inStock ?? true
     };
 
+    console.log('[LP] Salvando produto no Supabase:', product.id, '| imagens:', product.images?.length);
+
     const { error } = await supabase
       .from('products')
       .upsert(payload, { onConflict: 'id' });
 
     if (error) {
-      console.error('[LP] Supabase upsert error:', error.message, error.details, error.hint);
-      console.error('[LP] Payload que falhou:', JSON.stringify(payload, null, 2));
-      return false;
+      console.error('[LP] Supabase upsert error (tentativa 1):', error.message, error.details, error.hint);
+
+      // If the error is about a missing column (like color_sizes), retry without it
+      const errMsg = (error.message || '') + (error.details || '') + (error.hint || '');
+      if (errMsg.includes('color_sizes') || errMsg.includes('column') || errMsg.includes('undefined')) {
+        console.warn('[LP] Retentando sem color_sizes...');
+        delete payload.color_sizes;
+
+        const { error: retryError } = await supabase
+          .from('products')
+          .upsert(payload, { onConflict: 'id' });
+
+        if (retryError) {
+          console.error('[LP] Supabase upsert error (tentativa 2):', retryError.message);
+          return {
+            ok: false,
+            error: `Erro ao salvar produto: ${retryError.message}. Verifique a estrutura da tabela no Supabase.`
+          };
+        }
+
+        console.log('[LP] Produto salvo no Supabase (sem color_sizes):', product.id);
+        return { ok: true };
+      }
+
+      // Return the specific error for other failures
+      let userError = error.message;
+      if (error.message?.includes('JWT') || error.message?.includes('token')) {
+        userError = 'Sessão expirada. Faça login novamente.';
+      } else if (error.message?.includes('permission') || error.message?.includes('policy')) {
+        userError = 'Sem permissão. Verifique as políticas RLS da tabela products.';
+      }
+
+      return { ok: false, error: `Erro ao salvar: ${userError}` };
     }
+
     console.log('[LP] Produto salvo no Supabase com sucesso:', product.id, '| imagens:', product.images?.length);
-    return true;
-  } catch (err) {
+    return { ok: true };
+  } catch (err: any) {
     console.error('[LP] Supabase save exception:', err);
-    return false;
+    return { ok: false, error: `Exceção ao salvar: ${err?.message || 'erro desconhecido'}` };
   }
 }
 
