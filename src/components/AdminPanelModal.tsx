@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Product, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Plus, Edit, Trash2, Save, Upload, CheckCircle, ShieldCheck, 
-  Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles, Camera
+  Lock, Database, ImagePlus, Mail, Eye, EyeOff, LogOut, Loader2, Sparkles, Camera, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { uploadProductImage, isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -65,23 +65,78 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState('');
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState('');
+  const sessionCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Check Supabase session on open & listen to changes
+  // Validate the current session is still valid (not expired)
+  const validateSession = useCallback(async (): Promise<boolean> => {
+    if (!supabase) return false;
+    try {
+      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+      if (error || !currentSession) {
+        console.warn('[LP Admin] Sessão expirada ou inválida:', error?.message);
+        setSession(null);
+        setSessionExpiredMessage('Sua sessão expirou. Por favor, faça login novamente.');
+        return false;
+      }
+      // Check if token is expired
+      const expiresAt = currentSession.expires_at;
+      if (expiresAt && expiresAt * 1000 < Date.now()) {
+        console.warn('[LP Admin] Token expirado, tentando refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          setSession(null);
+          setSessionExpiredMessage('Sua sessão expirou e não foi possível renovar. Faça login novamente.');
+          return false;
+        }
+        setSession(refreshData.session);
+      } else {
+        setSession(currentSession);
+      }
+      setSessionExpiredMessage('');
+      return true;
+    } catch (err) {
+      console.error('[LP Admin] Erro ao validar sessão:', err);
+      setSession(null);
+      setSessionExpiredMessage('Erro de conexão. Faça login novamente.');
+      return false;
+    }
+  }, []);
+
+  // Check Supabase session on open, listen to changes, and validate periodically
   useEffect(() => {
     if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
+      // Initial session check
+      validateSession();
+
+      // Listen to auth state changes (login, logout, token refresh)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+        if (_event === 'SIGNED_OUT' || _event === 'TOKEN_REFRESHED') {
+          setSession(currentSession);
+          if (!currentSession) {
+            setSessionExpiredMessage('Sessão encerrada.');
+          } else {
+            setSessionExpiredMessage('');
+          }
+        } else {
+          setSession(currentSession);
+        }
       });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-        setSession(currentSession);
-      });
+      // Periodic session validation every 30 seconds while admin panel is open
+      sessionCheckIntervalRef.current = setInterval(() => {
+        validateSession();
+      }, 30_000);
 
       return () => {
         subscription.unsubscribe();
+        if (sessionCheckIntervalRef.current) {
+          clearInterval(sessionCheckIntervalRef.current);
+          sessionCheckIntervalRef.current = null;
+        }
       };
     }
-  }, []);
+  }, [validateSession]);
 
   const handleSupabaseLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,17 +242,53 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [imageUrlInput, setImageUrlInput] = useState('');
 
   // File Upload Handler — adds to images array with auto-compression
+  // Validates session before uploading to prevent silent failures
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Validate session before attempting upload
+    const isValid = await validateSession();
+    if (!isValid) {
+      alert('Sessão expirada. Por favor, faça login novamente para subir fotos.');
+      e.target.value = '';
+      return;
+    }
+
     setUploadingImage(true);
     try {
-      const uploadPromises = Array.from(files).map((file) => uploadProductImage(file));
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setFormData((prev) => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
-    } catch (err) {
-      alert('Erro ao carregar imagem. Verifique se o bucket "product-images" está público.');
+      const uploadResults: string[] = [];
+      const errors: string[] = [];
+
+      // Upload files one by one to get better error reporting
+      for (const file of Array.from(files)) {
+        try {
+          const url = await uploadProductImage(file);
+          // Check if the result is a base64 fallback (indicates storage upload failed)
+          if (url.startsWith('data:')) {
+            errors.push(`"${file.name}" — falha no upload ao Storage, salvo como base64 (temporário).`);
+          }
+          uploadResults.push(url);
+        } catch (fileErr: any) {
+          errors.push(`"${file.name}" — ${fileErr?.message || 'erro desconhecido'}`);
+          console.error('[LP Admin] Erro ao subir arquivo:', file.name, fileErr);
+        }
+      }
+
+      if (uploadResults.length > 0) {
+        setFormData((prev) => ({ ...prev, images: [...prev.images, ...uploadResults] }));
+      }
+
+      if (errors.length > 0) {
+        alert(
+          `⚠️ Atenção: ${errors.length} problema(s) no upload:\n\n` +
+          errors.join('\n') +
+          '\n\nVerifique se o bucket "product-images" está público e se sua sessão está ativa.'
+        );
+      }
+    } catch (err: any) {
+      console.error('[LP Admin] Erro geral de upload:', err);
+      alert('Erro ao carregar imagem. Verifique se o bucket "product-images" está público e se a sessão está ativa.');
     } finally {
       setUploadingImage(false);
       e.target.value = '';
@@ -361,12 +452,46 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const pmFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    // Validate session before attempting upload
+    const isValid = await validateSession();
+    if (!isValid) {
+      alert('Sessão expirada. Por favor, faça login novamente para subir fotos.');
+      e.target.value = '';
+      return;
+    }
+
     setPhotoManagerUploading(true);
     try {
-      const urls = await Promise.all(Array.from(files).map(f => uploadProductImage(f)));
-      setPhotoManagerImages(prev => [...prev, ...urls]);
+      const uploadResults: string[] = [];
+      const errors: string[] = [];
+
+      for (const file of Array.from(files)) {
+        try {
+          const url = await uploadProductImage(file);
+          if (url.startsWith('data:')) {
+            errors.push(`"${file.name}" — salvo como base64 (upload ao Storage falhou).`);
+          }
+          uploadResults.push(url);
+        } catch (fileErr: any) {
+          errors.push(`"${file.name}" — ${fileErr?.message || 'erro desconhecido'}`);
+          console.error('[LP Admin] Erro ao subir arquivo (PM):', file.name, fileErr);
+        }
+      }
+
+      if (uploadResults.length > 0) {
+        setPhotoManagerImages(prev => [...prev, ...uploadResults]);
+      }
+
+      if (errors.length > 0) {
+        alert(
+          `⚠️ ${errors.length} problema(s) no upload:\n\n` +
+          errors.join('\n') +
+          '\n\nVerifique o bucket e sua sessão.'
+        );
+      }
     } catch {
-      alert('Erro ao carregar imagem.');
+      alert('Erro ao carregar imagem. Verifique sua conexão e sessão.');
     } finally {
       setPhotoManagerUploading(false);
       e.target.value = '';
@@ -462,7 +587,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           {/* IF NOT AUTHENTICATED: SUPABASE SECURE LOGIN SCREEN         */}
           {/* ========================================================= */}
           {!session ? (
+            /* Show expired session warning if applicable */
             <div className="p-8 sm:p-12 text-center max-w-md mx-auto my-auto w-full">
+              {/* Session expired warning banner */}
+              {sessionExpiredMessage && (
+                <div className="mb-5 p-3.5 bg-amber-500/10 border border-amber-500/40 rounded-xl flex items-center gap-2.5 text-left">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <p className="text-xs font-black text-amber-400 uppercase tracking-wide">Sessão Expirada</p>
+                    <p className="text-[11px] text-amber-300/80 mt-0.5">{sessionExpiredMessage}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-yellow-500 via-amber-400 to-yellow-300 text-black flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(250,204,21,0.3)]">
                 <Lock className="w-8 h-8 stroke-[2.5]" />
               </div>

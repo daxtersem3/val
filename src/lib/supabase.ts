@@ -161,7 +161,8 @@ async function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promi
 }
 
 /**
- * Upload image file to Supabase Storage Bucket 'product-images' with auto-compression
+ * Upload image file to Supabase Storage Bucket 'product-images' with auto-compression.
+ * Throws descriptive errors when Storage upload fails instead of silently falling back.
  */
 export async function uploadProductImage(file: File): Promise<string> {
   if (supabase) {
@@ -170,6 +171,8 @@ export async function uploadProductImage(file: File): Promise<string> {
       const compressedBlob = await compressImage(file);
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
       const filePath = `products/${fileName}`;
+
+      console.log(`[LP] Uploading image: ${file.name} (${(file.size / 1024).toFixed(1)}KB) → compressed WebP → ${filePath}`);
 
       const { data, error } = await supabase.storage
         .from('product-images')
@@ -180,22 +183,50 @@ export async function uploadProductImage(file: File): Promise<string> {
         });
 
       if (error) {
-        console.error('Storage upload error:', error);
-      } else if (data) {
+        // Provide a descriptive error message based on the error type
+        let userMessage = `Erro ao subir "${file.name}": `;
+        const errMsg = error.message || '';
+        const statusCode = (error as any)?.statusCode;
+
+        if (statusCode === 403 || errMsg.includes('security') || errMsg.includes('policy') || errMsg.includes('not allowed')) {
+          userMessage += 'Permissão negada. Verifique as políticas RLS do bucket "product-images" e se sua sessão está ativa.';
+        } else if (statusCode === 413 || errMsg.includes('too large') || errMsg.includes('payload')) {
+          userMessage += 'Arquivo muito grande. Tente uma imagem menor.';
+        } else if (statusCode === 401 || errMsg.includes('JWT') || errMsg.includes('token') || errMsg.includes('expired')) {
+          userMessage += 'Sessão expirada. Faça login novamente.';
+        } else if (errMsg.includes('bucket') || errMsg.includes('not found')) {
+          userMessage += 'Bucket "product-images" não encontrado. Verifique a configuração no Supabase.';
+        } else {
+          userMessage += errMsg || 'Erro desconhecido no Storage.';
+        }
+
+        console.error('[LP] Storage upload error:', error);
+        throw new Error(userMessage);
+      }
+
+      if (data) {
         const { data: publicUrlData } = supabase.storage
           .from('product-images')
           .getPublicUrl(filePath);
 
         if (publicUrlData?.publicUrl) {
+          console.log(`[LP] Upload successful: ${publicUrlData.publicUrl}`);
           return publicUrlData.publicUrl;
         }
+        throw new Error(`Erro ao obter URL pública da imagem "${file.name}". Verifique se o bucket está configurado como público.`);
       }
-    } catch (e) {
-      console.error('Supabase image upload exception:', e);
+    } catch (e: any) {
+      // Re-throw our own errors, wrap unexpected ones
+      if (e?.message?.startsWith('Erro')) {
+        throw e;
+      }
+      console.error('[LP] Supabase image upload exception:', e);
+      throw new Error(`Exceção ao subir "${file.name}": ${e?.message || 'erro desconhecido'}`);
     }
   }
 
-  // Fallback to DataURL/Base64 persistent string
+  // Fallback to DataURL/Base64 persistent string (only when Supabase is not configured)
+  console.warn('[LP] Supabase not configured, falling back to base64 for:', file.name);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
